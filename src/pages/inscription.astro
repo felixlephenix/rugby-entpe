@@ -90,10 +90,8 @@ import { url } from '../lib/paths';
       return;
     }
 
-    const { error: playerError } = await supabase.from('players').insert({
-      id: signUpData.user.id,
-      username,
-      display_name: check.display_name ?? username,
+    const { error: playerError } = await supabase.rpc('claim_roster_username', {
+      uname: username,
     });
 
     if (playerError) {

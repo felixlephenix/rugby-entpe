@@ -5,7 +5,7 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const EMAIL_DOMAIN = 'players.rugby-entpe.local';
+const EMAIL_DOMAIN = 'players.rugby-entpe.app';
 
 export function usernameToEmail(username: string): string {
   return `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
