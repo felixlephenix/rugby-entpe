@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import { url } from '../lib/paths';
 
 const actus = (await getCollection('actus'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
@@ -20,7 +21,7 @@ const prochainsMatchs = (await getCollection('matchs'))
         Rejoignez l'équipe, suivez nos matchs et notre actualité.
       </p>
       <a
-        href="/contact"
+        href={url('/contact')}
         class="mt-8 inline-block rounded bg-amber-500 px-6 py-3 font-semibold text-slate-900 transition hover:bg-amber-400"
       >
         Nous rejoindre
@@ -44,7 +45,7 @@ const prochainsMatchs = (await getCollection('matchs'))
         </li>
       ))}
     </ul>
-    <a href="/calendrier" class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
+    <a href={url('/calendrier')} class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
       Voir tout le calendrier →
     </a>
   </section>
@@ -58,14 +59,14 @@ const prochainsMatchs = (await getCollection('matchs'))
           <p class="text-sm text-slate-500">
             {article.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
           </p>
-          <a href={`/actus/${article.id}`} class="mt-1 block font-semibold hover:underline">
+          <a href={url(`/actus/${article.id}`)} class="mt-1 block font-semibold hover:underline">
             {article.data.titre}
           </a>
           <p class="mt-1 text-sm text-slate-600">{article.data.resume}</p>
         </li>
       ))}
     </ul>
-    <a href="/actus" class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
+    <a href={url('/actus')} class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
       Toutes les actus →
     </a>
   </section>

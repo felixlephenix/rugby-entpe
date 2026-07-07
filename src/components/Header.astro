@@ -1,4 +1,6 @@
 ---
+import { url } from '../lib/paths';
+
 const links = [
   { href: '/', label: 'Accueil' },
   { href: '/equipes', label: 'Équipes' },
@@ -6,18 +8,18 @@ const links = [
   { href: '/actus', label: 'Actus' },
   { href: '/contact', label: 'Contact' },
 ];
-const currentPath = Astro.url.pathname;
+const currentPath = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
 ---
 
 <header class="bg-slate-900 text-white">
   <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-    <a href="/" class="text-xl font-bold tracking-wide">Rugby ENTPE</a>
+    <a href={url('/')} class="text-xl font-bold tracking-wide">Rugby ENTPE</a>
     <nav>
       <ul class="flex gap-6 text-sm font-medium">
         {links.map((link) => (
           <li>
             <a
-              href={link.href}
+              href={url(link.href)}
               class:list={[
                 'transition hover:text-amber-400',
                 currentPath === link.href && 'text-amber-400',

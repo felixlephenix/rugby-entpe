@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import { url } from '../../lib/paths';
 
 const actus = (await getCollection('actus')).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -17,7 +18,7 @@ const actus = (await getCollection('actus')).sort(
           <p class="text-sm text-slate-500">
             {article.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
-          <a href={`/actus/${article.id}`} class="mt-1 block text-xl font-bold hover:underline">
+          <a href={url(`/actus/${article.id}`)} class="mt-1 block text-xl font-bold hover:underline">
             {article.data.titre}
           </a>
           <p class="mt-2 text-sm text-slate-600">{article.data.resume}</p>

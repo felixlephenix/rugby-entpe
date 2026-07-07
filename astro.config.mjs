@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://felixlephenix.github.io',
+  base: '/rugby-entpe',
   vite: {
     plugins: [tailwindcss()]
   }
