@@ -1,0 +1,32 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const equipes = [
+  {
+    nom: 'Séniors',
+    description: "L'équipe première du club, engagée en championnat universitaire.",
+  },
+  {
+    nom: 'Féminines',
+    description: "L'équipe féminine, ouverte à toutes les joueuses quel que soit le niveau.",
+  },
+  {
+    nom: 'Loisir',
+    description: 'Pour jouer au rugby dans une ambiance conviviale, sans compétition.',
+  },
+];
+---
+
+<Layout title="Équipes">
+  <section class="mx-auto max-w-5xl px-4 py-16">
+    <h1 class="text-3xl font-extrabold">Nos équipes</h1>
+    <ul class="mt-8 grid gap-6 sm:grid-cols-3">
+      {equipes.map((equipe) => (
+        <li class="rounded border border-slate-200 p-6">
+          <h2 class="text-xl font-bold">{equipe.nom}</h2>
+          <p class="mt-2 text-sm text-slate-600">{equipe.description}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Layout>

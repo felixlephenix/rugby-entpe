@@ -1,0 +1,27 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const actus = await getCollection('actus');
+  return actus.map((article) => ({
+    params: { slug: article.id },
+    props: { article },
+  }));
+}
+
+const { article } = Astro.props;
+const { Content } = await render(article);
+---
+
+<Layout title={article.data.titre}>
+  <article class="mx-auto max-w-3xl px-4 py-16">
+    <p class="text-sm text-slate-500">
+      {article.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+    </p>
+    <h1 class="mt-2 text-3xl font-extrabold">{article.data.titre}</h1>
+    <div class="prose prose-slate mt-8 max-w-none">
+      <Content />
+    </div>
+  </article>
+</Layout>

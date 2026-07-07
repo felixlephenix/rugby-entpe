@@ -1,0 +1,72 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const actus = (await getCollection('actus'))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+
+const prochainsMatchs = (await getCollection('matchs'))
+  .filter((m) => m.data.date.valueOf() >= Date.now())
+  .sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf())
+  .slice(0, 3);
+---
+
+<Layout title="Accueil">
+  <section class="bg-slate-900 text-white">
+    <div class="mx-auto max-w-5xl px-4 py-24 text-center">
+      <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl">Club de Rugby ENTPE</h1>
+      <p class="mt-4 text-lg text-slate-300">
+        Rejoignez l'équipe, suivez nos matchs et notre actualité.
+      </p>
+      <a
+        href="/contact"
+        class="mt-8 inline-block rounded bg-amber-500 px-6 py-3 font-semibold text-slate-900 transition hover:bg-amber-400"
+      >
+        Nous rejoindre
+      </a>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-5xl px-4 py-16">
+    <h2 class="text-2xl font-bold">Prochains matchs</h2>
+    {prochainsMatchs.length === 0 && <p class="mt-4 text-slate-500">Aucun match programmé pour le moment.</p>}
+    <ul class="mt-6 grid gap-4 sm:grid-cols-3">
+      {prochainsMatchs.map((match) => (
+        <li class="rounded border border-slate-200 p-4">
+          <p class="text-sm text-slate-500">
+            {match.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+          </p>
+          <p class="mt-1 font-semibold">
+            {match.data.domicile ? 'ENTPE' : match.data.adversaire} vs {match.data.domicile ? match.data.adversaire : 'ENTPE'}
+          </p>
+          <p class="text-sm text-slate-500">{match.data.lieu}</p>
+        </li>
+      ))}
+    </ul>
+    <a href="/calendrier" class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
+      Voir tout le calendrier →
+    </a>
+  </section>
+
+  <section class="mx-auto max-w-5xl px-4 pb-16">
+    <h2 class="text-2xl font-bold">Dernières actus</h2>
+    {actus.length === 0 && <p class="mt-4 text-slate-500">Aucune actualité pour le moment.</p>}
+    <ul class="mt-6 grid gap-4 sm:grid-cols-3">
+      {actus.map((article) => (
+        <li class="rounded border border-slate-200 p-4">
+          <p class="text-sm text-slate-500">
+            {article.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+          </p>
+          <a href={`/actus/${article.id}`} class="mt-1 block font-semibold hover:underline">
+            {article.data.titre}
+          </a>
+          <p class="mt-1 text-sm text-slate-600">{article.data.resume}</p>
+        </li>
+      ))}
+    </ul>
+    <a href="/actus" class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
+      Toutes les actus →
+    </a>
+  </section>
+</Layout>

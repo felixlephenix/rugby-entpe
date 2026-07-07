@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const matchs = (await getCollection('matchs')).sort(
+  (a, b) => a.data.date.valueOf() - b.data.date.valueOf()
+);
+---
+
+<Layout title="Calendrier">
+  <section class="mx-auto max-w-5xl px-4 py-16">
+    <h1 class="text-3xl font-extrabold">Calendrier des matchs</h1>
+    {matchs.length === 0 && <p class="mt-6 text-slate-500">Aucun match programmé pour le moment.</p>}
+    <ul class="mt-8 divide-y divide-slate-200">
+      {matchs.map((match) => {
+        const passe = match.data.date.valueOf() < Date.now();
+        return (
+          <li class="flex flex-wrap items-center justify-between gap-2 py-4">
+            <div>
+              <p class="text-sm text-slate-500">
+                {match.data.date.toLocaleDateString('fr-FR', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}
+                {' · '}{match.data.categorie}
+              </p>
+              <p class="font-semibold">
+                {match.data.domicile ? 'ENTPE' : match.data.adversaire} vs {match.data.domicile ? match.data.adversaire : 'ENTPE'}
+              </p>
+              <p class="text-sm text-slate-500">{match.data.lieu}</p>
+            </div>
+            {passe && match.data.scoreEquipe !== undefined && match.data.scoreAdversaire !== undefined && (
+              <p class="text-lg font-bold">
+                {match.data.scoreEquipe} - {match.data.scoreAdversaire}
+              </p>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  </section>
+</Layout>

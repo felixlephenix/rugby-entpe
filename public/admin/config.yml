@@ -1,0 +1,44 @@
+# À compléter une fois le repo GitHub créé (voir tâche "Connecter le repo GitHub distant") :
+# - repo : owner/nom-du-repo
+# - base_url : URL du proxy OAuth GitHub (nécessaire pour que Decap CMS puisse s'authentifier
+#   depuis GitHub Pages, qui n'héberge pas de backend). Solution recommandée : déployer
+#   https://github.com/decaporg/decap-cms-oauth-provider gratuitement sur Vercel, puis créer
+#   une OAuth App GitHub pointant vers ce proxy.
+backend:
+  name: github
+  repo: TODO/TODO
+  branch: main
+  base_url: https://TODO.vercel.app
+
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+collections:
+  - name: "actus"
+    label: "Actualités"
+    folder: "src/content/actus"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Titre", name: "titre", widget: "string" }
+      - { label: "Date", name: "date", widget: "datetime" }
+      - { label: "Résumé", name: "resume", widget: "text" }
+      - { label: "Image", name: "image", widget: "image", required: false }
+      - { label: "Contenu", name: "body", widget: "markdown" }
+
+  - name: "matchs"
+    label: "Calendrier"
+    folder: "src/content/matchs"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{fields.adversaire}}"
+    fields:
+      - { label: "Adversaire", name: "adversaire", widget: "string" }
+      - { label: "Date", name: "date", widget: "datetime" }
+      - { label: "Lieu", name: "lieu", widget: "string" }
+      - { label: "À domicile", name: "domicile", widget: "boolean", default: true }
+      - label: "Catégorie"
+        name: "categorie"
+        widget: "select"
+        options: ["Séniors", "Féminines", "Loisir"]
+      - { label: "Score équipe", name: "scoreEquipe", widget: "number", required: false }
+      - { label: "Score adversaire", name: "scoreAdversaire", widget: "number", required: false }

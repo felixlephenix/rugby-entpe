@@ -1,0 +1,28 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const actus = (await getCollection('actus')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+---
+
+<Layout title="Actus">
+  <section class="mx-auto max-w-5xl px-4 py-16">
+    <h1 class="text-3xl font-extrabold">Actualités</h1>
+    {actus.length === 0 && <p class="mt-6 text-slate-500">Aucune actualité pour le moment.</p>}
+    <ul class="mt-8 grid gap-6 sm:grid-cols-2">
+      {actus.map((article) => (
+        <li class="rounded border border-slate-200 p-6">
+          <p class="text-sm text-slate-500">
+            {article.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+          <a href={`/actus/${article.id}`} class="mt-1 block text-xl font-bold hover:underline">
+            {article.data.titre}
+          </a>
+          <p class="mt-2 text-sm text-slate-600">{article.data.resume}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Layout>
