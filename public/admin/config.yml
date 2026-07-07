@@ -1,14 +1,10 @@
-# À compléter une fois le repo GitHub créé (voir tâche "Connecter le repo GitHub distant") :
-# - repo : owner/nom-du-repo
-# - base_url : URL du proxy OAuth GitHub (nécessaire pour que Decap CMS puisse s'authentifier
-#   depuis GitHub Pages, qui n'héberge pas de backend). Solution recommandée : déployer
-#   https://github.com/decaporg/decap-cms-oauth-provider gratuitement sur Vercel, puis créer
-#   une OAuth App GitHub pointant vers ce proxy.
+# base_url : URL du proxy OAuth GitHub, à compléter une fois déployé sur Cloudflare Workers.
 backend:
   name: github
-  repo: TODO/TODO
+  repo: felixlephenix/rugby-entpe
   branch: main
-  base_url: https://TODO.vercel.app
+  base_url: https://TODO.workers.dev
+  auth_endpoint: /auth
 
 media_folder: "public/uploads"
 public_folder: "/uploads"

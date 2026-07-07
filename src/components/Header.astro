@@ -7,11 +7,12 @@ const links = [
   { href: '/calendrier', label: 'Calendrier' },
   { href: '/actus', label: 'Actus' },
   { href: '/contact', label: 'Contact' },
+  { href: '/tableau-de-bord', label: 'Mon planning' },
 ];
 const currentPath = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
 ---
 
-<header class="bg-slate-900 text-white">
+<header class="bg-blue-900 text-white">
   <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
     <a href={url('/')} class="text-xl font-bold tracking-wide">Rugby ENTPE</a>
     <nav>
@@ -21,8 +22,8 @@ const currentPath = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(
             <a
               href={url(link.href)}
               class:list={[
-                'transition hover:text-amber-400',
-                currentPath === link.href && 'text-amber-400',
+                'transition hover:text-yellow-400',
+                currentPath === link.href && 'text-yellow-400',
               ]}
             >
               {link.label}

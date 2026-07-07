@@ -1,0 +1,162 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Tableau de bord">
+  <section class="mx-auto max-w-3xl px-4 py-16">
+    <div id="loading" class="text-slate-500">Chargement...</div>
+
+    <div id="content" class="hidden">
+      <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-extrabold">Mon planning</h1>
+        <p class="text-sm text-slate-600">
+          Total de points : <span id="total-points" class="font-bold text-blue-900">0</span>
+        </p>
+      </div>
+      <p id="week-label" class="mt-1 text-sm text-slate-500"></p>
+
+      <form id="form-planning" class="mt-8 space-y-3"></form>
+
+      <button
+        id="submit-plan"
+        form="form-planning"
+        type="submit"
+        class="mt-6 rounded bg-blue-900 px-4 py-2 font-semibold text-white transition hover:bg-blue-800"
+      >
+        Enregistrer mon planning de la semaine
+      </button>
+      <p id="plan-message" class="mt-2 text-sm" role="status"></p>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+  import { url } from '../lib/paths';
+
+  const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+  function getMonday(date: Date): string {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - (day === 0 ? 6 : day - 1);
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString().slice(0, 10);
+  }
+
+  async function main() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      window.location.href = url('/connexion');
+      return;
+    }
+    const userId = sessionData.session.user.id;
+
+    const [{ data: exercises }, { data: pointsRows }] = await Promise.all([
+      supabase.from('exercises').select('id, name, category').order('category'),
+      supabase.from('points_log').select('points').eq('player_id', userId),
+    ]);
+
+    const totalPoints = (pointsRows ?? []).reduce((sum, row) => sum + row.points, 0);
+    document.getElementById('total-points')!.textContent = String(totalPoints);
+
+    const weekStart = getMonday(new Date());
+    document.getElementById('week-label')!.textContent =
+      'Semaine du ' + new Date(weekStart).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+
+    const { data: existingPlan } = await supabase
+      .from('weekly_plans')
+      .select('id, planned_sessions(id, day_of_week, exercise_id, note, completed_at)')
+      .eq('player_id', userId)
+      .eq('week_start', weekStart)
+      .maybeSingle();
+
+    const existingByDay = new Map<number, any>();
+    for (const session of existingPlan?.planned_sessions ?? []) {
+      existingByDay.set(session.day_of_week, session);
+    }
+
+    const form = document.getElementById('form-planning')!;
+    form.innerHTML = DAYS.map((day, index) => {
+      const dayNum = index + 1;
+      const existing = existingByDay.get(dayNum);
+      const isLocked = Boolean(existing?.completed_at);
+      const options = ['<option value="">— Repos —</option>']
+        .concat(
+          (exercises ?? []).map(
+            (ex) =>
+              `<option value="${ex.id}" ${existing?.exercise_id === ex.id ? 'selected' : ''}>${ex.name} (${ex.category})</option>`
+          )
+        )
+        .join('');
+
+      return `
+        <div class="rounded border border-slate-200 p-4">
+          <div class="flex items-center justify-between">
+            <label class="font-semibold">${day}</label>
+            ${
+              existing
+                ? isLocked
+                  ? '<span class="text-sm font-semibold text-green-700">Fait ✓</span>'
+                  : `<button type="button" data-complete="${existing.id}" class="rounded bg-yellow-400 px-3 py-1 text-sm font-semibold text-blue-900 hover:bg-yellow-300">Marquer fait</button>`
+                : ''
+            }
+          </div>
+          <select name="exercise-${dayNum}" ${isLocked ? 'disabled' : ''} class="mt-2 w-full rounded border border-slate-300 px-2 py-1">
+            ${options}
+          </select>
+          <input
+            type="text"
+            name="note-${dayNum}"
+            placeholder="Note (optionnel)"
+            value="${existing?.note ?? ''}"
+            ${isLocked ? 'disabled' : ''}
+            class="mt-2 w-full rounded border border-slate-300 px-2 py-1"
+          />
+        </div>
+      `;
+    }).join('');
+
+    form.querySelectorAll('[data-complete]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const sessionId = (button as HTMLElement).dataset.complete;
+        const { error } = await supabase.rpc('complete_session', { session_id: sessionId });
+        if (!error) {
+          window.location.reload();
+        }
+      });
+    });
+
+    document.getElementById('form-planning')!.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const planMessage = document.getElementById('plan-message')!;
+      const formData = new FormData(form as HTMLFormElement);
+
+      const sessions = DAYS.map((_, index) => {
+        const dayNum = index + 1;
+        const exerciseId = formData.get(`exercise-${dayNum}`);
+        const note = formData.get(`note-${dayNum}`);
+        if (!exerciseId && !note) return null;
+        return { day_of_week: dayNum, exercise_id: exerciseId || null, note: note || null };
+      }).filter(Boolean);
+
+      const { error } = await supabase.rpc('define_weekly_plan', {
+        week_start_date: weekStart,
+        sessions,
+      });
+
+      if (error) {
+        planMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+        return;
+      }
+
+      window.location.reload();
+    });
+
+    document.getElementById('loading')!.classList.add('hidden');
+    document.getElementById('content')!.classList.remove('hidden');
+  }
+
+  main();
+</script>

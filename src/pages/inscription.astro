@@ -1,0 +1,106 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { url } from '../lib/paths';
+---
+
+<Layout title="Inscription">
+  <section class="mx-auto max-w-md px-4 py-16">
+    <h1 class="text-3xl font-extrabold">Créer mon compte</h1>
+    <p class="mt-2 text-sm text-slate-600">
+      Utilise le nom d'utilisateur qui t'a été communiqué par le coach.
+    </p>
+
+    <form id="form-inscription" class="mt-8 space-y-4">
+      <div>
+        <label for="username" class="block text-sm font-medium">Nom d'utilisateur</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          required
+          autocomplete="username"
+          class="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+        />
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium">Mot de passe</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+          class="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full rounded bg-blue-900 px-4 py-2 font-semibold text-white transition hover:bg-blue-800"
+      >
+        Créer mon compte
+      </button>
+      <p id="message" class="text-sm" role="status"></p>
+    </form>
+
+    <p class="mt-6 text-sm text-slate-600">
+      Déjà inscrit ? <a href={url('/connexion')} class="underline">Se connecter</a>
+    </p>
+  </section>
+</Layout>
+
+<script>
+  import { supabase, usernameToEmail } from '../lib/supabase';
+  import { url } from '../lib/paths';
+
+  const form = document.getElementById('form-inscription') as HTMLFormElement;
+  const message = document.getElementById('message')!;
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    message.textContent = '';
+
+    const formData = new FormData(form);
+    const username = String(formData.get('username')).trim().toLowerCase();
+    const password = String(formData.get('password'));
+
+    const { data: checkRows, error: checkError } = await supabase
+      .rpc('check_roster_username', { uname: username })
+      .single();
+
+    if (checkError) {
+      message.textContent = "Erreur : impossible de vérifier le nom d'utilisateur.";
+      return;
+    }
+
+    const check = checkRows as { available: boolean; display_name: string | null };
+
+    if (!check.available) {
+      message.textContent = "Ce nom d'utilisateur n'existe pas ou est déjà pris.";
+      return;
+    }
+
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: usernameToEmail(username),
+      password,
+    });
+
+    if (signUpError || !signUpData.user) {
+      message.textContent = "Erreur lors de la création du compte : " + (signUpError?.message ?? '');
+      return;
+    }
+
+    const { error: playerError } = await supabase.from('players').insert({
+      id: signUpData.user.id,
+      username,
+      display_name: check.display_name ?? username,
+    });
+
+    if (playerError) {
+      message.textContent = "Erreur lors de la finalisation du compte : " + playerError.message;
+      return;
+    }
+
+    window.location.href = url('/tableau-de-bord');
+  });
+</script>

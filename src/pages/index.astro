@@ -14,7 +14,7 @@ const prochainsMatchs = (await getCollection('matchs'))
 ---
 
 <Layout title="Accueil">
-  <section class="bg-slate-900 text-white">
+  <section class="bg-blue-900 text-white">
     <div class="mx-auto max-w-5xl px-4 py-24 text-center">
       <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl">Club de Rugby ENTPE</h1>
       <p class="mt-4 text-lg text-slate-300">
@@ -22,7 +22,7 @@ const prochainsMatchs = (await getCollection('matchs'))
       </p>
       <a
         href={url('/contact')}
-        class="mt-8 inline-block rounded bg-amber-500 px-6 py-3 font-semibold text-slate-900 transition hover:bg-amber-400"
+        class="mt-8 inline-block rounded bg-yellow-400 px-6 py-3 font-semibold text-blue-900 transition hover:bg-yellow-300"
       >
         Nous rejoindre
       </a>
@@ -30,6 +30,18 @@ const prochainsMatchs = (await getCollection('matchs'))
   </section>
 
   <section class="mx-auto max-w-5xl px-4 py-16">
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-bold">Classement du mois</h2>
+      <a href={url('/tableau-de-bord')} class="text-sm font-semibold text-blue-900 underline">
+        Accéder à mon planning →
+      </a>
+    </div>
+    <ol id="leaderboard" class="mt-6 divide-y divide-slate-200 rounded border border-slate-200">
+      <li class="p-4 text-sm text-slate-500">Chargement du classement...</li>
+    </ol>
+  </section>
+
+  <section class="mx-auto max-w-5xl px-4 pb-16">
     <h2 class="text-2xl font-bold">Prochains matchs</h2>
     {prochainsMatchs.length === 0 && <p class="mt-4 text-slate-500">Aucun match programmé pour le moment.</p>}
     <ul class="mt-6 grid gap-4 sm:grid-cols-3">
@@ -71,3 +83,31 @@ const prochainsMatchs = (await getCollection('matchs'))
     </a>
   </section>
 </Layout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  async function loadLeaderboard() {
+    const list = document.getElementById('leaderboard')!;
+    const { data, error } = await supabase.rpc('get_monthly_leaderboard');
+
+    if (error || !data || data.length === 0) {
+      list.innerHTML = '<li class="p-4 text-sm text-slate-500">Aucun point enregistré ce mois-ci pour le moment.</li>';
+      return;
+    }
+
+    list.innerHTML = data
+      .slice(0, 10)
+      .map(
+        (row: { display_name: string; total_points: number }, index: number) => `
+          <li class="flex items-center justify-between p-4">
+            <span class="font-semibold">${index + 1}. ${row.display_name}</span>
+            <span class="text-blue-900 font-bold">${row.total_points} pts</span>
+          </li>
+        `
+      )
+      .join('');
+  }
+
+  loadLeaderboard();
+</script>
