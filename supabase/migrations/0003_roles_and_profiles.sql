@@ -73,6 +73,9 @@ create trigger on_auth_user_created
 
 -- Empêche un joueur de s'auto-attribuer un rôle/statut, et protège le compte
 -- super_admin de toute modification, y compris par un autre admin.
+-- N'est appliqué que pour les requêtes passant par l'API (auth.uid() renseigné) :
+-- une modification directe en SQL Editor (auth.uid() null) reste possible, c'est
+-- le mécanisme prévu par le spec pour désigner le super_admin "directement en base".
 create or replace function protect_profile_fields()
 returns trigger
 language plpgsql
@@ -80,6 +83,10 @@ security definer
 set search_path = public
 as $$
 begin
+  if auth.uid() is null then
+    return new;
+  end if;
+
   if old.role = 'super_admin' then
     raise exception 'le compte super_admin est protégé et ne peut pas être modifié';
   end if;
