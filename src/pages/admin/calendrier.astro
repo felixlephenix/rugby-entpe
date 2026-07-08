@@ -40,7 +40,7 @@ import { url } from '../../lib/paths';
             <label class="flex items-center gap-2"><input type="checkbox" name="team_e1" checked /> E1</label>
             <label class="flex items-center gap-2"><input type="checkbox" name="team_e2" checked /> E2</label>
             <label class="block">Note<input type="text" name="note" class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
-            <button type="submit" class="mt-2 rounded bg-blue-900 px-4 py-2 font-semibold text-white hover:bg-blue-800">
+            <button type="submit" class="mt-2 rounded bg-bs-navy px-4 py-2 font-semibold text-white hover:bg-bs-navy/90">
               Générer les entraînements
             </button>
             <p id="recurring-message" class="text-sm"></p>
@@ -69,7 +69,7 @@ import { url } from '../../lib/paths';
             <label class="flex items-center gap-2"><input type="checkbox" name="team_e1" checked /> E1</label>
             <label class="flex items-center gap-2"><input type="checkbox" name="team_e2" checked /> E2</label>
             <label class="block">Note<input type="text" name="note" class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
-            <button type="submit" class="mt-2 rounded bg-blue-900 px-4 py-2 font-semibold text-white hover:bg-blue-800">
+            <button type="submit" class="mt-2 rounded bg-bs-navy px-4 py-2 font-semibold text-white hover:bg-bs-navy/90">
               Créer l'événement
             </button>
             <p id="event-message" class="text-sm"></p>
@@ -138,7 +138,7 @@ import { url } from '../../lib/paths';
               <div class="mt-3 flex items-center gap-2 text-sm">
                 <label>Score domicile <input type="number" data-score-home="${match.id}" value="${match.score_home ?? ''}" class="w-16 rounded border border-slate-300 px-1" /></label>
                 <label>Score adversaire <input type="number" data-score-away="${match.id}" value="${match.score_away ?? ''}" class="w-16 rounded border border-slate-300 px-1" /></label>
-                <button data-save-score="${match.id}" class="rounded bg-yellow-400 px-2 py-1 font-semibold text-blue-900 hover:bg-yellow-300">Enregistrer le score</button>
+                <button data-save-score="${match.id}" class="rounded bg-bs-yellow px-2 py-1 font-semibold text-bs-navy hover:bg-bs-yellow/90">Enregistrer le score</button>
               </div>
               <div class="mt-3">
                 <p class="text-sm font-semibold">Composition</p>
@@ -162,7 +162,7 @@ import { url } from '../../lib/paths';
                       .join('')}
                   </div>
                 </div>
-                <button data-save-compo="${ev.id}" class="mt-2 rounded bg-blue-900 px-2 py-1 text-sm font-semibold text-white hover:bg-blue-800">Enregistrer la compo</button>
+                <button data-save-compo="${ev.id}" class="mt-2 rounded bg-bs-navy px-2 py-1 text-sm font-semibold text-white hover:bg-bs-navy/90">Enregistrer la compo</button>
               </div>
             `
                 : ''

@@ -56,7 +56,7 @@ import { url } from '../../lib/paths';
               class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm"
             />
           </div>
-          <button type="submit" class="rounded bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+          <button type="submit" class="rounded bg-bs-navy px-4 py-2 text-sm font-semibold text-white hover:bg-bs-navy/90">
             Générer le lien
           </button>
         </form>
@@ -134,12 +134,12 @@ import { url } from '../../lib/paths';
 
         const pendingActions =
           p.status === 'pending'
-            ? `<button data-approve="${p.id}" class="rounded bg-yellow-400 px-2 py-1 font-semibold text-blue-900 hover:bg-yellow-300">Valider</button>
+            ? `<button data-approve="${p.id}" class="rounded bg-bs-yellow px-2 py-1 font-semibold text-bs-navy hover:bg-bs-yellow/90">Valider</button>
                <button data-reject="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Rejeter</button>`
             : '';
 
         const editActions = isEditing
-          ? `<button data-save="${p.id}" class="rounded bg-blue-900 px-2 py-1 font-semibold text-white hover:bg-blue-800">Enregistrer</button>
+          ? `<button data-save="${p.id}" class="rounded bg-bs-navy px-2 py-1 font-semibold text-white hover:bg-bs-navy/90">Enregistrer</button>
              ${
                !isSuperAdmin && p.status === 'active'
                  ? `<button data-mark-ancien="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Marquer ancien</button>`
@@ -160,7 +160,7 @@ import { url } from '../../lib/paths';
         return `
           <tr class="border-b border-slate-100" data-row="${p.id}">
             <td class="py-2 pr-4">
-              <a href="${url('/joueur')}?id=${p.id}" class="text-blue-900 underline hover:no-underline">
+              <a href="${url('/joueur')}?id=${p.id}" class="text-bs-navy underline hover:no-underline">
                 ${p.first_name} ${p.last_name}
               </a>
             </td>
@@ -268,12 +268,12 @@ import { url } from '../../lib/paths';
     document.querySelectorAll('.filter-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         currentFilter = (btn as HTMLElement).dataset.filter!;
-        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('bg-blue-900', 'text-white'));
-        btn.classList.add('bg-blue-900', 'text-white');
+        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('bg-bs-navy', 'text-white'));
+        btn.classList.add('bg-bs-navy', 'text-white');
         render();
       });
     });
-    document.querySelector('.filter-btn[data-filter="all"]')!.classList.add('bg-blue-900', 'text-white');
+    document.querySelector('.filter-btn[data-filter="all"]')!.classList.add('bg-bs-navy', 'text-white');
 
     document.getElementById('form-invite')!.addEventListener('submit', async (event) => {
       event.preventDefault();

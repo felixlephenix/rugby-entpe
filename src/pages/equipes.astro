@@ -59,7 +59,7 @@ import Layout from '../layouts/Layout.astro';
 
                   return `
                     <li>
-                      <a href="${url('/joueur')}?id=${p.id}" class="flex items-center gap-3 rounded border border-slate-200 p-4 hover:border-blue-900">
+                      <a href="${url('/joueur')}?id=${p.id}" class="flex items-center gap-3 rounded border border-slate-200 p-4 hover:border-bs-navy">
                         ${avatarUrl ? `<img src="${avatarUrl}" alt="" class="h-16 w-16 rounded-full object-cover" />` : initial}
                         <div>
                           <p class="font-semibold">${p.first_name} ${p.last_name}</p>

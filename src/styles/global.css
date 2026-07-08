@@ -19,3 +19,61 @@
 body {
   font-family: var(--font-body);
 }
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-bs-navy px-5 py-2.5 font-body text-sm font-medium text-bs-yellow transition hover:opacity-90;
+  }
+  .btn-secondary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border-[1.5px] border-bs-navy px-5 py-2.5 font-body text-sm font-medium text-bs-navy transition hover:bg-bs-navy/5;
+  }
+  .btn-ghost {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border-[0.5px] border-bs-border px-5 py-2.5 font-body text-sm font-medium text-bs-text transition hover:bg-black/5;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-[20px] px-2.5 py-[3px] font-body text-xs font-medium;
+  }
+  .badge-match {
+    @apply bg-bs-blue-light text-bs-navy;
+  }
+  .badge-entrainement {
+    @apply bg-[#FEFBE6] text-[#7A6E0A];
+  }
+  .badge-extra {
+    @apply bg-[#EAF3DE] text-[#27500A];
+  }
+  .badge-annule {
+    @apply bg-[#F5F5F3] text-[#888780] line-through;
+  }
+
+  .card {
+    @apply rounded-xl border-[0.5px] border-bs-border bg-bs-card;
+  }
+
+  .event-card {
+    @apply overflow-hidden rounded-xl border-[0.5px] border-bs-border bg-bs-card;
+  }
+  .event-card-stripe {
+    @apply h-1 w-full;
+  }
+  .event-card-stripe-match {
+    @apply bg-bs-navy;
+  }
+  .event-card-stripe-entrainement {
+    @apply bg-bs-yellow;
+  }
+  .event-card-stripe-extra {
+    background-color: #97c459;
+  }
+
+  .stat-card {
+    @apply rounded-[10px] bg-bs-blue-light px-3.5 py-3 text-center;
+  }
+  .stat-card-value {
+    @apply font-display text-[28px] font-medium text-bs-navy;
+  }
+  .stat-card-label {
+    @apply font-body text-[11px] text-bs-text/60;
+  }
+}

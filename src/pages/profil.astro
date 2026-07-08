@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
         <button
           id="logout-status"
           type="button"
-          class="text-sm font-semibold text-slate-600 underline hover:text-slate-900"
+          class="text-sm font-semibold text-slate-600 underline hover:text-bs-text"
         >
           Déconnexion
         </button>
@@ -26,7 +26,7 @@ import Layout from '../layouts/Layout.astro';
         <button
           id="logout"
           type="button"
-          class="text-sm font-semibold text-slate-600 underline hover:text-slate-900"
+          class="text-sm font-semibold text-slate-600 underline hover:text-bs-text"
         >
           Déconnexion
         </button>
@@ -96,7 +96,7 @@ import Layout from '../layouts/Layout.astro';
         <div class="flex gap-2">
           <button
             type="submit"
-            class="rounded bg-blue-900 px-4 py-2 font-semibold text-white transition hover:bg-blue-800"
+            class="rounded bg-bs-navy px-4 py-2 font-semibold text-white transition hover:bg-bs-navy/90"
           >
             Enregistrer
           </button>
@@ -111,13 +111,14 @@ import Layout from '../layouts/Layout.astro';
         <p id="avatar-bio-message" class="text-sm" role="status"></p>
       </form>
 
-      <h2 class="mt-8 text-xl font-bold">Planning de la semaine</h2>
-      <div class="mt-1 flex items-center justify-between">
-        <p id="week-label" class="text-sm text-slate-500"></p>
-        <p class="text-sm text-slate-600">
-          Total de points : <span id="total-points" class="font-bold text-blue-900">0</span>
-        </p>
+      <div class="mt-8 flex items-center justify-between">
+        <h2 class="text-xl font-bold">Planning de la semaine</h2>
+        <div class="stat-card">
+          <p id="total-points" class="stat-card-value font-numeric">0</p>
+          <p class="stat-card-label">points</p>
+        </div>
       </div>
+      <p id="week-label" class="mt-1 text-sm text-slate-500"></p>
 
       <form id="form-planning" class="mt-4 space-y-3"></form>
 
@@ -125,7 +126,7 @@ import Layout from '../layouts/Layout.astro';
         id="submit-plan"
         form="form-planning"
         type="submit"
-        class="mt-6 rounded bg-blue-900 px-4 py-2 font-semibold text-white transition hover:bg-blue-800"
+        class="mt-6 rounded bg-bs-navy px-4 py-2 font-semibold text-white transition hover:bg-bs-navy/90"
       >
         Enregistrer mon planning de la semaine
       </button>
@@ -159,7 +160,7 @@ import Layout from '../layouts/Layout.astro';
         </label>
         <button
           type="submit"
-          class="rounded bg-blue-900 px-4 py-2 font-semibold text-white transition hover:bg-blue-800"
+          class="rounded bg-bs-navy px-4 py-2 font-semibold text-white transition hover:bg-bs-navy/90"
         >
           Changer le mot de passe
         </button>
@@ -363,7 +364,7 @@ import Layout from '../layouts/Layout.astro';
               existing
                 ? isLocked
                   ? '<span class="text-sm font-semibold text-green-700">Fait ✓</span>'
-                  : `<button type="button" data-complete="${existing.id}" class="rounded bg-yellow-400 px-3 py-1 text-sm font-semibold text-blue-900 hover:bg-yellow-300">Marquer fait</button>`
+                  : `<button type="button" data-complete="${existing.id}" class="rounded bg-bs-yellow px-3 py-1 text-sm font-semibold text-bs-navy hover:bg-bs-yellow/90">Marquer fait</button>`
                 : ''
             }
           </div>

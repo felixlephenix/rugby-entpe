@@ -4,7 +4,7 @@ import { url } from '../lib/paths';
 ---
 
 <Layout title="Accueil">
-  <section class="bg-blue-900 text-white">
+  <section class="bg-bs-navy text-white">
     <div class="mx-auto max-w-5xl px-4 py-24 text-center">
       <h1 class="font-display text-4xl font-medium tracking-tight sm:text-5xl">BlueSharks ENTPE</h1>
       <p class="mt-4 text-lg text-slate-300">
@@ -12,7 +12,7 @@ import { url } from '../lib/paths';
       </p>
       <a
         href={url('/contact')}
-        class="mt-8 inline-block rounded bg-yellow-400 px-6 py-3 font-semibold text-blue-900 transition hover:bg-yellow-300"
+        class="mt-8 inline-block rounded bg-bs-yellow px-6 py-3 font-semibold text-bs-navy transition hover:bg-bs-yellow/90"
       >
         Nous rejoindre
       </a>
@@ -22,7 +22,7 @@ import { url } from '../lib/paths';
   <section class="mx-auto max-w-5xl px-4 py-16">
     <div class="flex items-center justify-between">
       <h2 class="text-2xl font-bold">Classement du mois</h2>
-      <a href={url('/profil')} class="text-sm font-semibold text-blue-900 underline">
+      <a href={url('/profil')} class="text-sm font-semibold text-bs-navy underline">
         Accéder à mon profil →
       </a>
     </div>
@@ -36,7 +36,7 @@ import { url } from '../lib/paths';
     <ul id="prochains-events" class="mt-6 grid gap-4 sm:grid-cols-3">
       <li class="text-sm text-slate-500">Chargement...</li>
     </ul>
-    <a href={url('/calendrier')} class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
+    <a href={url('/calendrier')} class="mt-6 inline-block text-sm font-semibold text-bs-text underline">
       Voir tout le calendrier →
     </a>
   </section>
@@ -46,7 +46,7 @@ import { url } from '../lib/paths';
     <ul id="dernieres-actus" class="mt-6 grid gap-4 sm:grid-cols-3">
       <li class="text-sm text-slate-500">Chargement...</li>
     </ul>
-    <a href={url('/actus')} class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
+    <a href={url('/actus')} class="mt-6 inline-block text-sm font-semibold text-bs-text underline">
       Toutes les actus →
     </a>
   </section>
@@ -70,7 +70,7 @@ import { url } from '../lib/paths';
         (row: { display_name: string; total_points: number }, index: number) => `
           <li class="flex items-center justify-between p-4">
             <span class="font-semibold">${index + 1}. ${row.display_name}</span>
-            <span class="text-blue-900 font-bold">${row.total_points} pts</span>
+            <span class="text-bs-navy font-bold">${row.total_points} pts</span>
           </li>
         `
       )

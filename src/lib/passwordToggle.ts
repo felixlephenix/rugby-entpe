@@ -9,7 +9,7 @@ export function addPasswordToggle(input: HTMLInputElement): void {
   button.type = 'button';
   button.textContent = 'Afficher';
   button.className =
-    'absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-blue-900 underline';
+    'absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-bs-navy underline';
   wrapper.appendChild(button);
 
   button.addEventListener('click', () => {
