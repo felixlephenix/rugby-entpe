@@ -587,8 +587,6 @@ $$;
 
 -- ===== 0006_admin_membres.sql =====
 
-create extension if not exists pgcrypto;
-
 create or replace function admin_delete_profile(target_id uuid)
 returns void
 language plpgsql
@@ -623,7 +621,7 @@ begin
     raise exception 'réservé au bureau ou au super_admin';
   end if;
 
-  new_token := encode(gen_random_bytes(24), 'hex');
+  new_token := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
 
   insert into member_invitations (email, created_by, token, expires_at)
   values (invite_email, auth.uid(), new_token, now() + interval '14 days');
