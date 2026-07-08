@@ -159,7 +159,11 @@ import { url } from '../../lib/paths';
 
         return `
           <tr class="border-b border-slate-100" data-row="${p.id}">
-            <td class="py-2 pr-4">${p.first_name} ${p.last_name}</td>
+            <td class="py-2 pr-4">
+              <a href="${url('/joueur')}?id=${p.id}" class="text-blue-900 underline hover:no-underline">
+                ${p.first_name} ${p.last_name}
+              </a>
+            </td>
             <td class="py-2 pr-4">${positionCell}</td>
             <td class="py-2 pr-4">${teamCell}</td>
             <td class="py-2 pr-4">${roleCell}</td>
