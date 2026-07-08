@@ -144,6 +144,11 @@ import { url } from '../../lib/paths';
                !isSuperAdmin && p.status === 'active'
                  ? `<button data-mark-ancien="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Marquer ancien</button>`
                  : ''
+             }
+             ${
+               p.avatar_path
+                 ? `<button data-delete-avatar="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Supprimer photo</button>`
+                 : ''
              }`
           : `<button data-edit="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Modifier</button>
              ${
@@ -196,6 +201,17 @@ import { url } from '../../lib/paths';
         const id = (btn as HTMLElement).dataset.delete;
         if (!confirm('Supprimer définitivement ce compte ? Cette action est irréversible.')) return;
         await supabase.rpc('admin_delete_profile', { target_id: id });
+        await load();
+      })
+    );
+
+    rows.querySelectorAll('[data-delete-avatar]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.deleteAvatar!;
+        if (!confirm('Supprimer la photo de profil de ce membre ?')) return;
+        await supabase.storage.from('avatars').remove([`${id}/avatar.jpg`]);
+        const { error } = await supabase.from('profiles').update({ avatar_path: null }).eq('id', id);
+        if (error) alert('Erreur : ' + error.message);
         await load();
       })
     );

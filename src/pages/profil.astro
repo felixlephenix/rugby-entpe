@@ -47,7 +47,16 @@ import Layout from '../layouts/Layout.astro';
           >
             Aucune photo
           </div>
-          <input id="avatar-input" type="file" accept="image/*" class="text-sm" />
+          <div>
+            <input id="avatar-input" type="file" accept="image/*" class="text-sm" />
+            <button
+              id="delete-avatar"
+              type="button"
+              class="mt-2 hidden text-xs font-semibold text-red-600 underline"
+            >
+              Supprimer la photo
+            </button>
+          </div>
         </div>
         <label class="block">
           Bio
@@ -180,13 +189,39 @@ import Layout from '../layouts/Layout.astro';
     const bioField = document.getElementById('bio') as HTMLTextAreaElement;
     bioField.value = profile?.bio ?? '';
 
-    if (profile?.avatar_path) {
-      const { data: avatarUrl } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_path);
+    function showAvatar(publicUrl: string) {
       const preview = document.getElementById('avatar-preview') as HTMLImageElement;
-      preview.src = avatarUrl.publicUrl;
+      preview.src = publicUrl;
       preview.classList.remove('hidden');
       document.getElementById('avatar-placeholder')!.classList.add('hidden');
+      document.getElementById('delete-avatar')!.classList.remove('hidden');
     }
+
+    function hideAvatar() {
+      const preview = document.getElementById('avatar-preview') as HTMLImageElement;
+      preview.src = '';
+      preview.classList.add('hidden');
+      document.getElementById('avatar-placeholder')!.classList.remove('hidden');
+      document.getElementById('delete-avatar')!.classList.add('hidden');
+    }
+
+    if (profile?.avatar_path) {
+      const { data: avatarUrl } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_path);
+      showAvatar(avatarUrl.publicUrl);
+    }
+
+    document.getElementById('delete-avatar')!.addEventListener('click', async () => {
+      if (!confirm('Supprimer ta photo de profil ?')) return;
+      const avatarBioMessage = document.getElementById('avatar-bio-message')!;
+      await supabase.storage.from('avatars').remove([`${userId}/avatar.jpg`]);
+      const { error } = await supabase.from('profiles').update({ avatar_path: null }).eq('id', userId);
+      if (error) {
+        avatarBioMessage.textContent = 'Erreur : ' + error.message;
+        return;
+      }
+      hideAvatar();
+      avatarBioMessage.textContent = 'Photo supprimée.';
+    });
 
     document.getElementById('form-avatar-bio')!.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -211,10 +246,7 @@ import Layout from '../layouts/Layout.astro';
       avatarBioMessage.textContent = error ? 'Erreur : ' + error.message : 'Enregistré.';
       if (!error && update.avatar_path) {
         const { data: avatarUrl } = supabase.storage.from('avatars').getPublicUrl(update.avatar_path as string);
-        const preview = document.getElementById('avatar-preview') as HTMLImageElement;
-        preview.src = avatarUrl.publicUrl + '?t=' + Date.now();
-        preview.classList.remove('hidden');
-        document.getElementById('avatar-placeholder')!.classList.add('hidden');
+        showAvatar(avatarUrl.publicUrl + '?t=' + Date.now());
       }
     });
 
