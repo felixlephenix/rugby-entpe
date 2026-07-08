@@ -76,6 +76,26 @@ import Layout from '../layouts/Layout.astro';
         <p id="avatar-bio-message" class="text-sm" role="status"></p>
       </form>
 
+      <h2 class="mt-8 text-xl font-bold">Planning de la semaine</h2>
+      <div class="mt-1 flex items-center justify-between">
+        <p id="week-label" class="text-sm text-slate-500"></p>
+        <p class="text-sm text-slate-600">
+          Total de points : <span id="total-points" class="font-bold text-blue-900">0</span>
+        </p>
+      </div>
+
+      <form id="form-planning" class="mt-4 space-y-3"></form>
+
+      <button
+        id="submit-plan"
+        form="form-planning"
+        type="submit"
+        class="mt-6 rounded bg-blue-900 px-4 py-2 font-semibold text-white transition hover:bg-blue-800"
+      >
+        Enregistrer mon planning de la semaine
+      </button>
+      <p id="plan-message" class="mt-2 text-sm" role="status"></p>
+
       <h2 class="mt-8 text-xl font-bold">Mon compte</h2>
       <form id="form-password" class="mt-3 max-w-sm space-y-2 text-sm">
         <label class="block">
@@ -110,26 +130,6 @@ import Layout from '../layouts/Layout.astro';
         </button>
         <p id="password-message" class="text-sm" role="status"></p>
       </form>
-
-      <h2 class="mt-8 text-xl font-bold">Planning de la semaine</h2>
-      <div class="mt-1 flex items-center justify-between">
-        <p id="week-label" class="text-sm text-slate-500"></p>
-        <p class="text-sm text-slate-600">
-          Total de points : <span id="total-points" class="font-bold text-blue-900">0</span>
-        </p>
-      </div>
-
-      <form id="form-planning" class="mt-4 space-y-3"></form>
-
-      <button
-        id="submit-plan"
-        form="form-planning"
-        type="submit"
-        class="mt-6 rounded bg-blue-900 px-4 py-2 font-semibold text-white transition hover:bg-blue-800"
-      >
-        Enregistrer mon planning de la semaine
-      </button>
-      <p id="plan-message" class="mt-2 text-sm" role="status"></p>
     </div>
   </section>
 </Layout>
