@@ -32,6 +32,41 @@ import Layout from '../layouts/Layout.astro';
         </button>
       </div>
 
+      <h2 class="mt-8 text-xl font-bold">Mon compte</h2>
+      <form id="form-password" class="mt-3 max-w-sm space-y-2 text-sm">
+        <label class="block">
+          Nouveau mot de passe
+          <input
+            id="new-password"
+            name="new-password"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+            class="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+          />
+        </label>
+        <label class="block">
+          Confirmer le mot de passe
+          <input
+            id="confirm-password"
+            name="confirm-password"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+            class="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+          />
+        </label>
+        <button
+          type="submit"
+          class="rounded bg-blue-900 px-4 py-2 font-semibold text-white transition hover:bg-blue-800"
+        >
+          Changer le mot de passe
+        </button>
+        <p id="password-message" class="text-sm" role="status"></p>
+      </form>
+
       <h2 class="mt-8 text-xl font-bold">Planning de la semaine</h2>
       <div class="mt-1 flex items-center justify-between">
         <p id="week-label" class="text-sm text-slate-500"></p>
@@ -206,6 +241,24 @@ import Layout from '../layouts/Layout.astro';
     document.getElementById('logout')!.addEventListener('click', async () => {
       await supabase.auth.signOut();
       window.location.href = url('/connexion');
+    });
+
+    document.getElementById('form-password')!.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const passwordMessage = document.getElementById('password-message')!;
+      const newPassword = (document.getElementById('new-password') as HTMLInputElement).value;
+      const confirmPassword = (document.getElementById('confirm-password') as HTMLInputElement).value;
+
+      if (newPassword !== confirmPassword) {
+        passwordMessage.textContent = 'Les deux mots de passe ne correspondent pas.';
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      passwordMessage.textContent = error ? 'Erreur : ' + error.message : 'Mot de passe changé.';
+      if (!error) {
+        (document.getElementById('form-password') as HTMLFormElement).reset();
+      }
     });
 
     document.getElementById('loading')!.classList.add('hidden');
