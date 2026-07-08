@@ -37,7 +37,7 @@ import Layout from '../layouts/Layout.astro';
   }
 
   function downloadIcs(filename: string, events: any[]) {
-    const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Rugby ENTPE//FR', ...events.map(eventToIcs), 'END:VCALENDAR'].join(
+    const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//BlueSharks ENTPE//FR', ...events.map(eventToIcs), 'END:VCALENDAR'].join(
       '\r\n'
     );
     const blob = new Blob([body], { type: 'text/calendar' });
