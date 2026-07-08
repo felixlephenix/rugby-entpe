@@ -32,5 +32,33 @@ const currentPath = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(
         ))}
       </ul>
     </nav>
+    <a
+      id="admin-link"
+      href={url('/admin')}
+      class="hidden text-sm font-semibold text-yellow-400 hover:underline"
+    >
+      Administration
+    </a>
   </div>
 </header>
+
+<script>
+  import { supabase, isAdminRole } from '../lib/supabase';
+
+  async function showAdminLinkIfAllowed() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, status')
+      .eq('id', sessionData.session.user.id)
+      .single();
+
+    if (profile && profile.status === 'active' && isAdminRole(profile.role)) {
+      document.getElementById('admin-link')?.classList.remove('hidden');
+    }
+  }
+
+  showAdminLinkIfAllowed();
+</script>

@@ -5,8 +5,20 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const EMAIL_DOMAIN = 'players.rugby-entpe.app';
+export type ProfileStatus = 'pending' | 'active' | 'ancien' | 'banned';
+export type ProfileRole = 'joueur' | 'coach' | 'bureau' | 'respo_site' | 'super_admin';
 
-export function usernameToEmail(username: string): string {
-  return `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
+export interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  position: string | null;
+  default_team: 'E1' | 'E2' | null;
+  role: ProfileRole;
+  status: ProfileStatus;
+  former_bureau: boolean;
+}
+
+export function isAdminRole(role: ProfileRole): boolean {
+  return role === 'coach' || role === 'bureau' || role === 'super_admin';
 }

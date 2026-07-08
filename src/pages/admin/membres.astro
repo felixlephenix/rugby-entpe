@@ -1,0 +1,257 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { url } from '../../lib/paths';
+---
+
+<Layout title="Membres">
+  <section class="mx-auto max-w-5xl px-4 py-16">
+    <div id="loading" class="text-slate-500">Chargement...</div>
+
+    <div id="content" class="hidden">
+      <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-extrabold">Membres</h1>
+        <a href={url('/admin')} class="text-sm font-semibold text-slate-600 underline">← Administration</a>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <input
+          id="search"
+          type="text"
+          placeholder="Rechercher un nom..."
+          class="rounded border border-slate-300 px-3 py-2 text-sm"
+        />
+        <div id="filters" class="flex gap-2 text-sm">
+          <button data-filter="all" class="filter-btn rounded px-3 py-1 font-semibold">Tous</button>
+          <button data-filter="active" class="filter-btn rounded px-3 py-1 font-semibold">Actif</button>
+          <button data-filter="ancien" class="filter-btn rounded px-3 py-1 font-semibold">Ancien joueur</button>
+          <button data-filter="pending" class="filter-btn rounded px-3 py-1 font-semibold">En attente</button>
+        </div>
+      </div>
+
+      <div class="mt-6 overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-left text-slate-500">
+              <th class="py-2 pr-4">Nom</th>
+              <th class="py-2 pr-4">Poste</th>
+              <th class="py-2 pr-4">Équipe</th>
+              <th class="py-2 pr-4">Rôle</th>
+              <th class="py-2 pr-4">Statut</th>
+              <th class="py-2 pr-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="mt-8 rounded border border-slate-200 p-4">
+        <h2 class="font-bold">Créer une invitation</h2>
+        <form id="form-invite" class="mt-2 flex flex-wrap items-end gap-3">
+          <div>
+            <label for="invite-email" class="block text-sm font-medium">Email</label>
+            <input
+              id="invite-email"
+              type="email"
+              required
+              class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <button type="submit" class="rounded bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+            Générer le lien
+          </button>
+        </form>
+        <p id="invite-result" class="mt-2 text-sm"></p>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { supabase, type Profile } from '../../lib/supabase';
+  import { requireAdmin } from '../../lib/adminGuard';
+  import { url } from '../../lib/paths';
+
+  const ROLE_LABELS: Record<string, string> = {
+    joueur: 'Joueur',
+    coach: 'Coach',
+    bureau: 'Bureau',
+    respo_site: 'Respo site',
+    super_admin: 'Super admin',
+  };
+
+  const STATUS_LABELS: Record<string, string> = {
+    pending: 'En attente',
+    active: 'Actif',
+    ancien: 'Ancien',
+    banned: 'Banni',
+  };
+
+  let allProfiles: Profile[] = [];
+  let currentFilter = 'all';
+
+  function render() {
+    const search = (document.getElementById('search') as HTMLInputElement).value.trim().toLowerCase();
+
+    const filtered = allProfiles.filter((p) => {
+      if (currentFilter === 'active' && p.status !== 'active') return false;
+      if (currentFilter === 'ancien' && p.status !== 'ancien') return false;
+      if (currentFilter === 'pending' && p.status !== 'pending') return false;
+      if (search) {
+        const fullName = `${p.first_name} ${p.last_name}`.toLowerCase();
+        if (!fullName.includes(search)) return false;
+      }
+      return true;
+    });
+
+    const rows = document.getElementById('rows')!;
+    rows.innerHTML = filtered
+      .map((p) => {
+        const isSuperAdmin = p.role === 'super_admin';
+        const roleOptions = Object.entries(ROLE_LABELS)
+          .filter(([value]) => value !== 'super_admin')
+          .map(([value, label]) => `<option value="${value}" ${p.role === value ? 'selected' : ''}>${label}</option>`)
+          .join('');
+
+        return `
+          <tr class="border-b border-slate-100" data-row="${p.id}">
+            <td class="py-2 pr-4">${p.first_name} ${p.last_name}</td>
+            <td class="py-2 pr-4">
+              <input data-field="position" data-id="${p.id}" value="${p.position ?? ''}" class="w-28 rounded border border-slate-200 px-2 py-1" ${isSuperAdmin ? 'disabled' : ''} />
+            </td>
+            <td class="py-2 pr-4">
+              <select data-field="default_team" data-id="${p.id}" class="rounded border border-slate-200 px-2 py-1" ${isSuperAdmin ? 'disabled' : ''}>
+                <option value="">—</option>
+                <option value="E1" ${p.default_team === 'E1' ? 'selected' : ''}>E1</option>
+                <option value="E2" ${p.default_team === 'E2' ? 'selected' : ''}>E2</option>
+              </select>
+            </td>
+            <td class="py-2 pr-4">
+              ${
+                isSuperAdmin
+                  ? 'Super admin'
+                  : `<select data-field="role" data-id="${p.id}" class="rounded border border-slate-200 px-2 py-1">${roleOptions}</select>`
+              }
+            </td>
+            <td class="py-2 pr-4">${STATUS_LABELS[p.status]}</td>
+            <td class="py-2 pr-4 space-x-2 whitespace-nowrap">
+              ${
+                p.status === 'pending'
+                  ? `<button data-approve="${p.id}" class="rounded bg-yellow-400 px-2 py-1 font-semibold text-blue-900 hover:bg-yellow-300">Valider</button>
+                     <button data-reject="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Rejeter</button>`
+                  : ''
+              }
+              ${
+                !isSuperAdmin && p.status === 'active'
+                  ? `<button data-mark-ancien="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Marquer ancien</button>`
+                  : ''
+              }
+              ${
+                !isSuperAdmin
+                  ? `<button data-save="${p.id}" class="rounded bg-blue-900 px-2 py-1 font-semibold text-white hover:bg-blue-800">Enregistrer</button>
+                     <button data-delete="${p.id}" class="rounded bg-red-600 px-2 py-1 font-semibold text-white hover:bg-red-500">Supprimer</button>`
+                  : ''
+              }
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    rows.querySelectorAll('[data-approve]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.approve;
+        await supabase.from('profiles').update({ status: 'active' }).eq('id', id);
+        await load();
+      })
+    );
+
+    rows.querySelectorAll('[data-reject]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.reject;
+        if (!confirm('Rejeter et supprimer cette inscription ?')) return;
+        await supabase.rpc('reject_pending_profile', { target_id: id });
+        await load();
+      })
+    );
+
+    rows.querySelectorAll('[data-mark-ancien]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.markAncien;
+        await supabase.from('profiles').update({ status: 'ancien' }).eq('id', id);
+        await load();
+      })
+    );
+
+    rows.querySelectorAll('[data-delete]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.delete;
+        if (!confirm('Supprimer définitivement ce compte ? Cette action est irréversible.')) return;
+        await supabase.rpc('admin_delete_profile', { target_id: id });
+        await load();
+      })
+    );
+
+    rows.querySelectorAll('[data-save]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.save;
+        const row = rows.querySelector(`tr[data-row="${id}"]`)!;
+        const position = (row.querySelector('[data-field="position"]') as HTMLInputElement).value || null;
+        const defaultTeam = (row.querySelector('[data-field="default_team"]') as HTMLSelectElement).value || null;
+        const roleField = row.querySelector('[data-field="role"]') as HTMLSelectElement | null;
+
+        const update: Record<string, unknown> = { position, default_team: defaultTeam };
+        if (roleField) update.role = roleField.value;
+
+        const { error } = await supabase.from('profiles').update(update).eq('id', id);
+        if (error) alert('Erreur : ' + error.message);
+        await load();
+      })
+    );
+  }
+
+  async function load() {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('first_name');
+    allProfiles = (data ?? []) as Profile[];
+    render();
+  }
+
+  async function main() {
+    const profile = await requireAdmin();
+    if (!profile) return;
+
+    document.getElementById('search')!.addEventListener('input', render);
+
+    document.querySelectorAll('.filter-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentFilter = (btn as HTMLElement).dataset.filter!;
+        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('bg-blue-900', 'text-white'));
+        btn.classList.add('bg-blue-900', 'text-white');
+        render();
+      });
+    });
+    document.querySelector('.filter-btn[data-filter="all"]')!.classList.add('bg-blue-900', 'text-white');
+
+    document.getElementById('form-invite')!.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = (document.getElementById('invite-email') as HTMLInputElement).value.trim();
+      const { data, error } = await supabase.rpc('create_member_invitation', { invite_email: email });
+      const result = document.getElementById('invite-result')!;
+      if (error) {
+        result.textContent = 'Erreur : ' + error.message;
+        return;
+      }
+      const link = `${window.location.origin}${url('/inscription')}?invitation=${data}`;
+      result.innerHTML = `Lien à transmettre : <a class="underline" href="${link}">${link}</a>`;
+    });
+
+    await load();
+
+    document.getElementById('loading')!.classList.add('hidden');
+    document.getElementById('content')!.classList.remove('hidden');
+  }
+
+  main();
+</script>

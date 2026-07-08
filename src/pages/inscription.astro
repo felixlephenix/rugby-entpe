@@ -7,18 +7,42 @@ import { url } from '../lib/paths';
   <section class="mx-auto max-w-md px-4 py-16">
     <h1 class="text-3xl font-extrabold">Créer mon compte</h1>
     <p class="mt-2 text-sm text-slate-600">
-      Utilise le nom d'utilisateur qui t'a été communiqué par le coach.
+      Ton compte sera activé par le bureau après inscription.
     </p>
 
     <form id="form-inscription" class="mt-8 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="first_name" class="block text-sm font-medium">Prénom</label>
+          <input
+            id="first_name"
+            name="first_name"
+            type="text"
+            required
+            autocomplete="given-name"
+            class="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+          />
+        </div>
+        <div>
+          <label for="last_name" class="block text-sm font-medium">Nom</label>
+          <input
+            id="last_name"
+            name="last_name"
+            type="text"
+            required
+            autocomplete="family-name"
+            class="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+          />
+        </div>
+      </div>
       <div>
-        <label for="username" class="block text-sm font-medium">Nom d'utilisateur</label>
+        <label for="email" class="block text-sm font-medium">Email</label>
         <input
-          id="username"
-          name="username"
-          type="text"
+          id="email"
+          name="email"
+          type="email"
           required
-          autocomplete="username"
+          autocomplete="email"
           autocapitalize="none"
           autocorrect="off"
           spellcheck="false"
@@ -56,7 +80,7 @@ import { url } from '../lib/paths';
 </Layout>
 
 <script>
-  import { supabase, usernameToEmail } from '../lib/supabase';
+  import { supabase } from '../lib/supabase';
   import { url } from '../lib/paths';
 
   const form = document.getElementById('form-inscription') as HTMLFormElement;
@@ -67,41 +91,28 @@ import { url } from '../lib/paths';
     message.textContent = '';
 
     const formData = new FormData(form);
-    const username = String(formData.get('username')).trim().toLowerCase();
+    const firstName = String(formData.get('first_name')).trim();
+    const lastName = String(formData.get('last_name')).trim();
+    const email = String(formData.get('email')).trim().toLowerCase();
     const password = String(formData.get('password'));
 
-    const { data: checkRows, error: checkError } = await supabase
-      .rpc('check_roster_username', { uname: username })
-      .single();
-
-    if (checkError) {
-      message.textContent = "Erreur : impossible de vérifier le nom d'utilisateur.";
-      return;
-    }
-
-    const check = checkRows as { available: boolean; display_name: string | null };
-
-    if (!check.available) {
-      message.textContent = "Ce nom d'utilisateur n'existe pas ou est déjà pris.";
-      return;
-    }
+    const params = new URLSearchParams(window.location.search);
+    const invitationToken = params.get('invitation');
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: usernameToEmail(username),
+      email,
       password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        },
+      },
     });
 
     if (signUpError || !signUpData.user) {
-      message.textContent = "Erreur lors de la création du compte : " + (signUpError?.message ?? '');
-      return;
-    }
-
-    const { error: playerError } = await supabase.rpc('claim_roster_username', {
-      uname: username,
-    });
-
-    if (playerError) {
-      message.textContent = "Erreur lors de la finalisation du compte : " + playerError.message;
+      message.textContent = 'Erreur lors de la création du compte : ' + (signUpError?.message ?? '');
       return;
     }
 

@@ -6,5 +6,8 @@ insert into exercises (name, category, description) values
   ('Gainage', 'muscu', '3 x 45 secondes'),
   ('Corde à sauter', 'cardio', '3 x 5 minutes');
 
--- Pour ajouter un joueur autorisé à créer un compte, insérer dans roster :
--- insert into roster (username, display_name, category) values ('test', 'Joueur Test', 'Séniors');
+-- Pour désigner le super_admin (un seul, à faire une fois manuellement en base) :
+-- update profiles set role = 'super_admin', status = 'active' where id = '<uuid de ton compte>';
+
+-- Pour valider manuellement un compte en attente sans passer par le panel admin :
+-- update profiles set status = 'active' where id = '<uuid du compte>';

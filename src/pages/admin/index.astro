@@ -1,0 +1,46 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { url } from '../../lib/paths';
+---
+
+<Layout title="Administration">
+  <section class="mx-auto max-w-3xl px-4 py-16">
+    <div id="loading" class="text-slate-500">Chargement...</div>
+    <div id="content" class="hidden">
+      <h1 class="text-3xl font-extrabold">Administration</h1>
+      <ul class="mt-8 grid gap-4 sm:grid-cols-3">
+        <li>
+          <a href={url('/admin/membres')} class="block rounded border border-slate-200 p-6 hover:border-blue-900">
+            <span class="text-lg font-bold">Membres</span>
+            <p class="mt-1 text-sm text-slate-600">Inscriptions, rôles, statuts</p>
+          </a>
+        </li>
+        <li>
+          <a href={url('/admin/calendrier')} class="block rounded border border-slate-200 p-6 hover:border-blue-900">
+            <span class="text-lg font-bold">Calendrier</span>
+            <p class="mt-1 text-sm text-slate-600">Entraînements, matchs, extras</p>
+          </a>
+        </li>
+        <li>
+          <a href={url('/admin/actus')} class="block rounded border border-slate-200 p-6 hover:border-blue-900">
+            <span class="text-lg font-bold">Actus</span>
+            <p class="mt-1 text-sm text-slate-600">Publications et brouillons</p>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { requireAdmin } from '../../lib/adminGuard';
+
+  async function main() {
+    const profile = await requireAdmin();
+    if (!profile) return;
+    document.getElementById('loading')!.classList.add('hidden');
+    document.getElementById('content')!.classList.remove('hidden');
+  }
+
+  main();
+</script>

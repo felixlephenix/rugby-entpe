@@ -9,13 +9,13 @@ import { url } from '../lib/paths';
 
     <form id="form-connexion" class="mt-8 space-y-4">
       <div>
-        <label for="username" class="block text-sm font-medium">Nom d'utilisateur</label>
+        <label for="email" class="block text-sm font-medium">Email</label>
         <input
-          id="username"
-          name="username"
-          type="text"
+          id="email"
+          name="email"
+          type="email"
           required
-          autocomplete="username"
+          autocomplete="email"
           autocapitalize="none"
           autocorrect="off"
           spellcheck="false"
@@ -52,7 +52,7 @@ import { url } from '../lib/paths';
 </Layout>
 
 <script>
-  import { supabase, usernameToEmail } from '../lib/supabase';
+  import { supabase } from '../lib/supabase';
   import { url } from '../lib/paths';
 
   const form = document.getElementById('form-connexion') as HTMLFormElement;
@@ -63,16 +63,13 @@ import { url } from '../lib/paths';
     message.textContent = '';
 
     const formData = new FormData(form);
-    const username = String(formData.get('username')).trim().toLowerCase();
+    const email = String(formData.get('email')).trim().toLowerCase();
     const password = String(formData.get('password'));
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: usernameToEmail(username),
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      message.textContent = 'Nom d\'utilisateur ou mot de passe incorrect.';
+      message.textContent = 'Email ou mot de passe incorrect.';
       return;
     }
 

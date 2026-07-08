@@ -6,6 +6,20 @@ import Layout from '../layouts/Layout.astro';
   <section class="mx-auto max-w-3xl px-4 py-16">
     <div id="loading" class="text-slate-500">Chargement...</div>
 
+    <div id="status-message" class="hidden">
+      <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-extrabold">Mon planning</h1>
+        <button
+          id="logout-status"
+          type="button"
+          class="text-sm font-semibold text-slate-600 underline hover:text-slate-900"
+        >
+          Déconnexion
+        </button>
+      </div>
+      <p id="status-text" class="mt-6 rounded border border-slate-200 bg-slate-50 p-4 text-slate-700"></p>
+    </div>
+
     <div id="content" class="hidden">
       <div class="flex items-center justify-between">
         <h1 class="text-3xl font-extrabold">Mon planning</h1>
@@ -61,6 +75,30 @@ import Layout from '../layouts/Layout.astro';
       return;
     }
     const userId = sessionData.session.user.id;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('status')
+      .eq('id', userId)
+      .single();
+
+    document.getElementById('logout-status')!.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = url('/connexion');
+    });
+
+    if (profile?.status !== 'active') {
+      const statusMessages: Record<string, string> = {
+        pending: 'Ton compte est en attente de validation par le bureau. Tu recevras un accès dès que ce sera fait.',
+        ancien: "Ton compte est marqué comme ancien joueur, l'accès au suivi d'entraînement est désactivé.",
+        banned: "L'accès à ce compte a été désactivé.",
+      };
+      document.getElementById('status-text')!.textContent =
+        statusMessages[profile?.status ?? 'pending'] ?? 'Compte non actif.';
+      document.getElementById('loading')!.classList.add('hidden');
+      document.getElementById('status-message')!.classList.remove('hidden');
+      return;
+    }
 
     const [{ data: exercises }, { data: pointsRows }] = await Promise.all([
       supabase.from('exercises').select('id, name, category').order('category'),
