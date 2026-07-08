@@ -79,11 +79,6 @@ import { url } from '../lib/paths';
 
   async function loadUpcomingEvents() {
     const list = document.getElementById('prochains-events')!;
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      list.innerHTML = '<li class="text-sm text-slate-500">Connecte-toi pour voir les prochains événements.</li>';
-      return;
-    }
 
     const { data: events } = await supabase
       .from('events')
@@ -117,11 +112,6 @@ import { url } from '../lib/paths';
 
   async function loadDernieresActus() {
     const list = document.getElementById('dernieres-actus')!;
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      list.innerHTML = '<li class="text-sm text-slate-500">Connecte-toi pour voir les actualités.</li>';
-      return;
-    }
 
     const { data: news } = await supabase
       .from('news')

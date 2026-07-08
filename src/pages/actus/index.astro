@@ -5,9 +5,6 @@ import Layout from '../../layouts/Layout.astro';
 <Layout title="Actus">
   <section class="mx-auto max-w-5xl px-4 py-16">
     <h1 class="text-3xl font-extrabold">Actualités</h1>
-    <div id="login-required" class="mt-6 hidden text-slate-500">
-      Connecte-toi pour voir les actualités du club.
-    </div>
     <ul id="news-list" class="mt-8 grid gap-6 sm:grid-cols-2"></ul>
   </section>
 </Layout>
@@ -17,12 +14,6 @@ import Layout from '../../layouts/Layout.astro';
   import { url } from '../../lib/paths';
 
   async function main() {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      document.getElementById('login-required')!.classList.remove('hidden');
-      return;
-    }
-
     const { data: news } = await supabase
       .from('news')
       .select('id, title, content, tag, created_at')
