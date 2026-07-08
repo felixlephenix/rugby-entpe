@@ -9,11 +9,20 @@ import Layout from '../layouts/Layout.astro';
     <div id="content" class="hidden">
       <div class="flex items-center justify-between">
         <h1 class="text-3xl font-extrabold">Mon planning</h1>
+        <button
+          id="logout"
+          type="button"
+          class="text-sm font-semibold text-slate-600 underline hover:text-slate-900"
+        >
+          Déconnexion
+        </button>
+      </div>
+      <div class="mt-1 flex items-center justify-between">
+        <p id="week-label" class="text-sm text-slate-500"></p>
         <p class="text-sm text-slate-600">
           Total de points : <span id="total-points" class="font-bold text-blue-900">0</span>
         </p>
       </div>
-      <p id="week-label" class="mt-1 text-sm text-slate-500"></p>
 
       <form id="form-planning" class="mt-8 space-y-3"></form>
 
@@ -152,6 +161,11 @@ import Layout from '../layouts/Layout.astro';
       }
 
       window.location.reload();
+    });
+
+    document.getElementById('logout')!.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = url('/connexion');
     });
 
     document.getElementById('loading')!.classList.add('hidden');
