@@ -15,7 +15,7 @@ export async function requireAdmin(): Promise<Profile | null> {
     .single();
 
   if (!profile || profile.status !== 'active' || !isAdminRole(profile.role)) {
-    window.location.href = url('/tableau-de-bord');
+    window.location.href = url('/profil');
     return null;
   }
 
