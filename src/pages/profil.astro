@@ -129,6 +129,10 @@ import Layout from '../layouts/Layout.astro';
   import { supabase } from '../lib/supabase';
   import { url } from '../lib/paths';
   import { compressImage } from '../lib/imageCompress';
+  import { addPasswordToggle } from '../lib/passwordToggle';
+
+  addPasswordToggle(document.getElementById('new-password') as HTMLInputElement);
+  addPasswordToggle(document.getElementById('confirm-password') as HTMLInputElement);
 
   const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 

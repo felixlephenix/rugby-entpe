@@ -54,9 +54,12 @@ import { url } from '../lib/paths';
 <script>
   import { supabase } from '../lib/supabase';
   import { url } from '../lib/paths';
+  import { addPasswordToggle } from '../lib/passwordToggle';
 
   const form = document.getElementById('form-connexion') as HTMLFormElement;
   const message = document.getElementById('message')!;
+
+  addPasswordToggle(document.getElementById('password') as HTMLInputElement);
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
