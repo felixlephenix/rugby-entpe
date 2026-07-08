@@ -17,6 +17,8 @@ export interface Profile {
   role: ProfileRole;
   status: ProfileStatus;
   former_bureau: boolean;
+  bio: string | null;
+  avatar_path: string | null;
 }
 
 export function isAdminRole(role: ProfileRole): boolean {
