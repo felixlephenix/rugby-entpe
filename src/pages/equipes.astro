@@ -14,6 +14,7 @@ import Layout from '../layouts/Layout.astro';
 <script>
   import { supabase } from '../lib/supabase';
   import { url } from '../lib/paths';
+  import { avatarUrl } from '../lib/avatar';
 
   const TEAM_LABELS: Record<string, string> = {
     E1: 'Équipe 1',
@@ -24,7 +25,7 @@ import Layout from '../layouts/Layout.astro';
   async function main() {
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, position, default_team, avatar_path, status')
+      .select('id, first_name, last_name, position, default_team, avatar_path, status, role')
       .in('status', ['active', 'ancien'])
       .order('first_name');
 
@@ -50,17 +51,10 @@ import Layout from '../layouts/Layout.astro';
             <ul class="mt-4 grid gap-4 sm:grid-cols-3">
               ${groups[key]
                 .map((p) => {
-                  const avatarUrl = p.avatar_path
-                    ? supabase.storage.from('avatars').getPublicUrl(p.avatar_path).data.publicUrl
-                    : null;
-                  const initial = (avatarUrl
-                    ? ''
-                    : `<div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-500">Aucune photo</div>`);
-
                   return `
                     <li>
                       <a href="${url('/joueur')}?id=${p.id}" class="flex items-center gap-3 rounded border border-slate-200 p-4 hover:border-bs-navy">
-                        ${avatarUrl ? `<img src="${avatarUrl}" alt="" class="h-16 w-16 rounded-full object-cover" />` : initial}
+                        <img src="${avatarUrl(p)}" alt="" class="h-16 w-16 rounded-full object-cover" />
                         <div>
                           <p class="font-semibold">${p.first_name} ${p.last_name}</p>
                           <p class="text-sm text-slate-500">${p.position ?? ''}</p>

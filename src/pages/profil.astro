@@ -35,18 +35,7 @@ import Layout from '../layouts/Layout.astro';
       <h2 class="mt-8 text-xl font-bold">Photo et bio</h2>
 
       <div id="avatar-bio-view" class="mt-3 flex items-start gap-4">
-        <img
-          id="avatar-preview-view"
-          src=""
-          alt="Photo de profil"
-          class="hidden h-20 w-20 rounded-full object-cover"
-        />
-        <div
-          id="avatar-placeholder-view"
-          class="flex h-20 w-20 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-500"
-        >
-          Aucune photo
-        </div>
+        <img id="avatar-preview-view" src="" alt="Photo de profil" class="h-20 w-20 rounded-full object-cover" />
         <div>
           <p id="bio-text" class="max-w-sm text-sm text-slate-700"></p>
           <button
@@ -61,18 +50,7 @@ import Layout from '../layouts/Layout.astro';
 
       <form id="form-avatar-bio" class="mt-3 hidden max-w-sm space-y-3 text-sm">
         <div class="flex items-center gap-4">
-          <img
-            id="avatar-preview"
-            src=""
-            alt="Photo de profil"
-            class="hidden h-20 w-20 rounded-full object-cover"
-          />
-          <div
-            id="avatar-placeholder"
-            class="flex h-20 w-20 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-500"
-          >
-            Aucune photo
-          </div>
+          <img id="avatar-preview" src="" alt="Photo de profil" class="h-20 w-20 rounded-full object-cover" />
           <div>
             <input id="avatar-input" type="file" accept="image/*" class="text-sm" />
             <button
@@ -175,6 +153,7 @@ import Layout from '../layouts/Layout.astro';
   import { url } from '../lib/paths';
   import { compressImage } from '../lib/imageCompress';
   import { addPasswordToggle } from '../lib/passwordToggle';
+  import { avatarUrl, defaultAvatarUrl } from '../lib/avatar';
 
   addPasswordToggle(document.getElementById('new-password') as HTMLInputElement);
   addPasswordToggle(document.getElementById('confirm-password') as HTMLInputElement);
@@ -200,7 +179,7 @@ import Layout from '../layouts/Layout.astro';
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('status, bio, avatar_path')
+      .select('status, bio, avatar_path, role, first_name, last_name')
       .eq('id', userId)
       .single();
 
@@ -225,27 +204,15 @@ import Layout from '../layouts/Layout.astro';
     const bioField = document.getElementById('bio') as HTMLTextAreaElement;
     const bioText = document.getElementById('bio-text')!;
     let currentBio = profile?.bio ?? '';
-    let currentAvatarUrl = '';
+    let currentAvatarPath: string | null = profile?.avatar_path ?? null;
+    const profileIdentity = { first_name: profile!.first_name, last_name: profile!.last_name, role: profile!.role };
 
     function renderViewMode() {
       bioText.textContent = currentBio || 'Aucune bio pour le moment.';
-      const previewView = document.getElementById('avatar-preview-view') as HTMLImageElement;
-      const previewEdit = document.getElementById('avatar-preview') as HTMLImageElement;
-      if (currentAvatarUrl) {
-        previewView.src = currentAvatarUrl;
-        previewView.classList.remove('hidden');
-        document.getElementById('avatar-placeholder-view')!.classList.add('hidden');
-        previewEdit.src = currentAvatarUrl;
-        previewEdit.classList.remove('hidden');
-        document.getElementById('avatar-placeholder')!.classList.add('hidden');
-        document.getElementById('delete-avatar')!.classList.remove('hidden');
-      } else {
-        previewView.classList.add('hidden');
-        document.getElementById('avatar-placeholder-view')!.classList.remove('hidden');
-        previewEdit.classList.add('hidden');
-        document.getElementById('avatar-placeholder')!.classList.remove('hidden');
-        document.getElementById('delete-avatar')!.classList.add('hidden');
-      }
+      const src = avatarUrl({ ...profileIdentity, avatar_path: currentAvatarPath });
+      (document.getElementById('avatar-preview-view') as HTMLImageElement).src = src;
+      (document.getElementById('avatar-preview') as HTMLImageElement).src = src;
+      document.getElementById('delete-avatar')!.classList.toggle('hidden', !currentAvatarPath);
     }
 
     function enterEditMode() {
@@ -261,10 +228,6 @@ import Layout from '../layouts/Layout.astro';
       document.getElementById('form-avatar-bio')!.classList.add('hidden');
     }
 
-    if (profile?.avatar_path) {
-      const { data: avatarUrl } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_path);
-      currentAvatarUrl = avatarUrl.publicUrl;
-    }
     renderViewMode();
 
     document.getElementById('edit-avatar-bio')!.addEventListener('click', enterEditMode);
@@ -279,7 +242,7 @@ import Layout from '../layouts/Layout.astro';
         avatarBioMessage.textContent = 'Erreur : ' + error.message;
         return;
       }
-      currentAvatarUrl = '';
+      currentAvatarPath = null;
       renderViewMode();
       avatarBioMessage.textContent = 'Photo supprimée.';
     });
@@ -311,10 +274,14 @@ import Layout from '../layouts/Layout.astro';
 
       currentBio = bioField.value;
       if (update.avatar_path) {
-        const { data: avatarUrl } = supabase.storage.from('avatars').getPublicUrl(update.avatar_path as string);
-        currentAvatarUrl = avatarUrl.publicUrl + '?t=' + Date.now();
+        currentAvatarPath = update.avatar_path as string;
       }
       renderViewMode();
+      if (update.avatar_path) {
+        const bustedSrc = avatarUrl({ ...profileIdentity, avatar_path: currentAvatarPath }) + '?t=' + Date.now();
+        (document.getElementById('avatar-preview-view') as HTMLImageElement).src = bustedSrc;
+        (document.getElementById('avatar-preview') as HTMLImageElement).src = bustedSrc;
+      }
       exitEditMode();
     });
 

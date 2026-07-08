@@ -9,18 +9,7 @@ import Layout from '../layouts/Layout.astro';
 
     <div id="content" class="hidden">
       <div class="flex items-start gap-4">
-        <img
-          id="avatar"
-          src=""
-          alt="Photo de profil"
-          class="hidden h-24 w-24 rounded-full object-cover"
-        />
-        <div
-          id="avatar-placeholder"
-          class="flex h-24 w-24 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-500"
-        >
-          Aucune photo
-        </div>
+        <img id="avatar" src="" alt="Photo de profil" class="h-24 w-24 rounded-full object-cover" />
         <div>
           <h1 id="name" class="text-3xl font-extrabold"></h1>
           <p id="position-team" class="mt-1 text-sm text-slate-500"></p>
@@ -44,6 +33,7 @@ import Layout from '../layouts/Layout.astro';
 
 <script>
   import { supabase } from '../lib/supabase';
+  import { avatarUrl } from '../lib/avatar';
 
   const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
@@ -66,7 +56,7 @@ import Layout from '../layouts/Layout.astro';
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('first_name, last_name, position, default_team, bio, avatar_path, status')
+      .select('first_name, last_name, position, default_team, bio, avatar_path, status, role')
       .eq('id', id)
       .maybeSingle();
 
@@ -83,13 +73,7 @@ import Layout from '../layouts/Layout.astro';
       .join(' · ') || 'Poste et équipe non renseignés';
     document.getElementById('bio')!.textContent = profile.bio || 'Aucune bio pour le moment.';
 
-    if (profile.avatar_path) {
-      const { data: avatarUrl } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_path);
-      const avatar = document.getElementById('avatar') as HTMLImageElement;
-      avatar.src = avatarUrl.publicUrl;
-      avatar.classList.remove('hidden');
-      document.getElementById('avatar-placeholder')!.classList.add('hidden');
-    }
+    (document.getElementById('avatar') as HTMLImageElement).src = avatarUrl(profile);
 
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {

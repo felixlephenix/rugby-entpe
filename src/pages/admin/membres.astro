@@ -32,6 +32,7 @@ import { url } from '../../lib/paths';
         <table class="w-full border-collapse text-sm">
           <thead>
             <tr class="border-b border-slate-200 text-left text-slate-500">
+              <th class="py-2 pr-4">Photo</th>
               <th class="py-2 pr-4">Nom</th>
               <th class="py-2 pr-4">Poste</th>
               <th class="py-2 pr-4">Équipe</th>
@@ -70,6 +71,7 @@ import { url } from '../../lib/paths';
   import { supabase, type Profile } from '../../lib/supabase';
   import { requireAdmin } from '../../lib/adminGuard';
   import { url } from '../../lib/paths';
+  import { avatarUrl } from '../../lib/avatar';
 
   const ROLE_LABELS: Record<string, string> = {
     joueur: 'Joueur',
@@ -144,11 +146,6 @@ import { url } from '../../lib/paths';
                !isSuperAdmin && p.status === 'active'
                  ? `<button data-mark-ancien="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Marquer ancien</button>`
                  : ''
-             }
-             ${
-               p.avatar_path
-                 ? `<button data-delete-avatar="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Supprimer photo</button>`
-                 : ''
              }`
           : `<button data-edit="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Modifier</button>
              ${
@@ -157,8 +154,20 @@ import { url } from '../../lib/paths';
                  : ''
              }`;
 
+        const photoCell = `
+          <div class="flex flex-col items-center gap-1">
+            <img src="${avatarUrl(p)}" alt="" class="h-10 w-10 rounded-full object-cover" />
+            ${
+              p.avatar_path
+                ? `<button data-delete-avatar="${p.id}" class="text-[11px] font-semibold text-red-600 underline">Supprimer</button>`
+                : ''
+            }
+          </div>
+        `;
+
         return `
           <tr class="border-b border-slate-100" data-row="${p.id}">
+            <td class="py-2 pr-4">${photoCell}</td>
             <td class="py-2 pr-4">
               <a href="${url('/joueur')}?id=${p.id}" class="text-bs-navy underline hover:no-underline">
                 ${p.first_name} ${p.last_name}
