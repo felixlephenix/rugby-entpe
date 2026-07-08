@@ -116,10 +116,10 @@ import { url } from '../../lib/paths';
           <tr class="border-b border-slate-100" data-row="${p.id}">
             <td class="py-2 pr-4">${p.first_name} ${p.last_name}</td>
             <td class="py-2 pr-4">
-              <input data-field="position" data-id="${p.id}" value="${p.position ?? ''}" class="w-28 rounded border border-slate-200 px-2 py-1" ${isSuperAdmin ? 'disabled' : ''} />
+              <input data-field="position" data-id="${p.id}" value="${p.position ?? ''}" class="w-28 rounded border border-slate-200 px-2 py-1" />
             </td>
             <td class="py-2 pr-4">
-              <select data-field="default_team" data-id="${p.id}" class="rounded border border-slate-200 px-2 py-1" ${isSuperAdmin ? 'disabled' : ''}>
+              <select data-field="default_team" data-id="${p.id}" class="rounded border border-slate-200 px-2 py-1">
                 <option value="">—</option>
                 <option value="E1" ${p.default_team === 'E1' ? 'selected' : ''}>E1</option>
                 <option value="E2" ${p.default_team === 'E2' ? 'selected' : ''}>E2</option>
@@ -145,10 +145,10 @@ import { url } from '../../lib/paths';
                   ? `<button data-mark-ancien="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Marquer ancien</button>`
                   : ''
               }
+              <button data-save="${p.id}" class="rounded bg-blue-900 px-2 py-1 font-semibold text-white hover:bg-blue-800">Enregistrer</button>
               ${
                 !isSuperAdmin
-                  ? `<button data-save="${p.id}" class="rounded bg-blue-900 px-2 py-1 font-semibold text-white hover:bg-blue-800">Enregistrer</button>
-                     <button data-delete="${p.id}" class="rounded bg-red-600 px-2 py-1 font-semibold text-white hover:bg-red-500">Supprimer</button>`
+                  ? `<button data-delete="${p.id}" class="rounded bg-red-600 px-2 py-1 font-semibold text-white hover:bg-red-500">Supprimer</button>`
                   : ''
               }
             </td>
@@ -204,6 +204,7 @@ import { url } from '../../lib/paths';
 
         const { error } = await supabase.from('profiles').update(update).eq('id', id);
         if (error) alert('Erreur : ' + error.message);
+        else alert('Enregistré.');
         await load();
       })
     );

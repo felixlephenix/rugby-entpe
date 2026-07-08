@@ -20,6 +20,7 @@ alter table profiles
 -- désormais ouverte (email + mot de passe), validée a posteriori par le bureau.
 drop function if exists claim_roster_username(text);
 drop function if exists check_roster_username(text);
+drop policy if exists "a player can self-register with a valid roster username" on profiles;
 alter table profiles drop constraint if exists players_username_fkey;
 alter table profiles drop column if exists username;
 drop table if exists roster;
@@ -87,8 +88,12 @@ begin
     return new;
   end if;
 
-  if old.role = 'super_admin' then
-    raise exception 'le compte super_admin est protégé et ne peut pas être modifié';
+  if old.role = 'super_admin' and (
+    new.role is distinct from old.role
+    or new.status is distinct from old.status
+    or new.former_bureau is distinct from old.former_bureau
+  ) then
+    raise exception 'le rôle/statut du compte super_admin est protégé et ne peut pas être modifié';
   end if;
 
   if not is_admin() and (

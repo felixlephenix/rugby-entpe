@@ -24,6 +24,7 @@ alter table profiles
 
 drop function if exists claim_roster_username(text);
 drop function if exists check_roster_username(text);
+drop policy if exists "a player can self-register with a valid roster username" on profiles;
 alter table profiles drop constraint if exists players_username_fkey;
 alter table profiles drop column if exists username;
 drop table if exists roster;
