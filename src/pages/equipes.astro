@@ -1,32 +1,82 @@
 ---
 import Layout from '../layouts/Layout.astro';
-
-const equipes = [
-  {
-    nom: 'Séniors',
-    description: "L'équipe première du club, engagée en championnat universitaire.",
-  },
-  {
-    nom: 'Féminines',
-    description: "L'équipe féminine, ouverte à toutes les joueuses quel que soit le niveau.",
-  },
-  {
-    nom: 'Loisir',
-    description: 'Pour jouer au rugby dans une ambiance conviviale, sans compétition.',
-  },
-];
 ---
 
 <Layout title="Équipes">
   <section class="mx-auto max-w-5xl px-4 py-16">
     <h1 class="text-3xl font-extrabold">Nos équipes</h1>
-    <ul class="mt-8 grid gap-6 sm:grid-cols-3">
-      {equipes.map((equipe) => (
-        <li class="rounded border border-slate-200 p-6">
-          <h2 class="text-xl font-bold">{equipe.nom}</h2>
-          <p class="mt-2 text-sm text-slate-600">{equipe.description}</p>
-        </li>
-      ))}
-    </ul>
+    <div id="teams" class="mt-8 space-y-10">
+      <p class="text-slate-500">Chargement...</p>
+    </div>
   </section>
 </Layout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+  import { url } from '../lib/paths';
+
+  const TEAM_LABELS: Record<string, string> = {
+    E1: 'Équipe 1',
+    E2: 'Équipe 2',
+    none: 'Sans équipe assignée',
+  };
+
+  async function main() {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, position, default_team, avatar_path, status')
+      .in('status', ['active', 'ancien'])
+      .order('first_name');
+
+    const container = document.getElementById('teams')!;
+
+    if (!profiles || profiles.length === 0) {
+      container.innerHTML = '<p class="text-slate-500">Aucun membre à afficher pour le moment.</p>';
+      return;
+    }
+
+    const groups: Record<string, typeof profiles> = { E1: [], E2: [], none: [] };
+    for (const p of profiles) {
+      const key = p.default_team ?? 'none';
+      groups[key].push(p);
+    }
+
+    container.innerHTML = (['E1', 'E2', 'none'] as const)
+      .filter((key) => groups[key].length > 0)
+      .map(
+        (key) => `
+          <div>
+            <h2 class="text-xl font-bold">${TEAM_LABELS[key]}</h2>
+            <ul class="mt-4 grid gap-4 sm:grid-cols-3">
+              ${groups[key]
+                .map((p) => {
+                  const avatarUrl = p.avatar_path
+                    ? supabase.storage.from('avatars').getPublicUrl(p.avatar_path).data.publicUrl
+                    : null;
+                  const initial = (avatarUrl
+                    ? ''
+                    : `<div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xs text-slate-500">Aucune photo</div>`);
+
+                  return `
+                    <li>
+                      <a href="${url('/joueur')}?id=${p.id}" class="flex items-center gap-3 rounded border border-slate-200 p-4 hover:border-blue-900">
+                        ${avatarUrl ? `<img src="${avatarUrl}" alt="" class="h-16 w-16 rounded-full object-cover" />` : initial}
+                        <div>
+                          <p class="font-semibold">${p.first_name} ${p.last_name}</p>
+                          <p class="text-sm text-slate-500">${p.position ?? ''}</p>
+                          ${p.status === 'ancien' ? '<p class="text-xs text-slate-400">Ancien joueur</p>' : ''}
+                        </div>
+                      </a>
+                    </li>
+                  `;
+                })
+                .join('')}
+            </ul>
+          </div>
+        `
+      )
+      .join('');
+  }
+
+  main();
+</script>
