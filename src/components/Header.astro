@@ -1,29 +1,34 @@
 ---
 import { url } from '../lib/paths';
+import Icon from './Icon.astro';
 
 const links = [
-  { href: '/', label: 'Accueil' },
-  { href: '/equipes', label: 'Équipes' },
-  { href: '/calendrier', label: 'Calendrier' },
-  { href: '/actus', label: 'Actus' },
-  { href: '/contact', label: 'Contact' },
-  { href: '/profil', label: 'Mon profil' },
+  { href: '/', label: 'Accueil', icon: 'home' as const },
+  { href: '/calendrier', label: 'Calendrier', icon: 'calendar' as const },
+  { href: '/actus', label: 'Actus', icon: 'news' as const },
+  { href: '/equipes', label: 'Équipes', icon: 'users' as const },
+  { href: '/contact', label: 'Contact', icon: 'mail' as const },
+  { href: '/profil', label: 'Mon profil', icon: 'user' as const },
 ];
+
 const currentPath = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
 ---
 
-<header class="bg-blue-900 text-white">
-  <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-    <a href={url('/')} class="text-xl font-bold tracking-wide">Rugby ENTPE</a>
+<header class="fixed inset-x-0 top-0 z-40 hidden h-[60px] bg-bs-navy md:block">
+  <div class="mx-auto flex h-full max-w-[1200px] items-center justify-between px-8">
+    <a href={url('/')} class="flex items-center gap-2">
+      <img src={url('/logo.jpg')} alt="BlueSharks ENTPE" class="h-8 w-8 rounded-full" />
+      <span class="font-display text-lg font-medium text-white">BlueSharks ENTPE</span>
+    </a>
     <nav>
-      <ul class="flex gap-6 text-sm font-medium">
+      <ul class="flex gap-6 font-body text-sm font-medium">
         {links.map((link) => (
           <li>
             <a
               href={url(link.href)}
               class:list={[
-                'transition hover:text-yellow-400',
-                currentPath === link.href && 'text-yellow-400',
+                'transition hover:text-bs-yellow',
+                currentPath === link.href ? 'text-bs-yellow' : 'text-white',
               ]}
             >
               {link.label}
@@ -32,20 +37,59 @@ const currentPath = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(
         ))}
       </ul>
     </nav>
-    <a
-      id="admin-link"
-      href={url('/admin')}
-      class="hidden text-sm font-semibold text-yellow-400 hover:underline"
-    >
-      Administration
-    </a>
+    <div class="flex items-center gap-3">
+      <button
+        id="admin-mode-toggle-desktop"
+        type="button"
+        class="hidden items-center gap-2 rounded-full border border-white/30 px-3 py-1 text-xs font-medium text-white/80 hover:border-white/60"
+      >
+        <Icon name="user" size={14} />
+        <span id="admin-mode-label-desktop">Mode joueur</span>
+      </button>
+      <a
+        id="admin-link-desktop"
+        href={url('/admin')}
+        class="hidden items-center gap-1 rounded-full bg-bs-yellow px-3 py-1 text-xs font-semibold text-bs-navy"
+      >
+        <Icon name="settings" size={14} />
+        Admin
+      </a>
+    </div>
   </div>
 </header>
 
+<nav class="fixed inset-x-0 bottom-0 z-40 flex h-16 rounded-t-2xl bg-bs-navy md:hidden">
+  {links.map((link) => (
+    <a
+      href={url(link.href)}
+      class:list={[
+        'flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium',
+        currentPath === link.href ? 'text-bs-yellow' : 'text-white/55',
+      ]}
+    >
+      <Icon name={link.icon} size={20} />
+      <span>{link.label}</span>
+    </a>
+  ))}
+  <a
+    id="admin-tab-mobile"
+    href={url('/admin')}
+    class:list={[
+      'relative hidden flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium',
+      currentPath === '/admin' ? 'text-bs-yellow' : 'text-white/55',
+    ]}
+  >
+    <Icon name="settings" size={20} />
+    <span>Admin</span>
+    <span class="absolute right-[22%] top-2 h-1.5 w-1.5 rounded-full bg-bs-yellow"></span>
+  </a>
+</nav>
+
 <script>
   import { supabase, isAdminRole } from '../lib/supabase';
+  import { isAdminModeOn, setAdminMode } from '../lib/adminMode';
 
-  async function showAdminLinkIfAllowed() {
+  async function refreshAdminUi() {
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) return;
 
@@ -55,10 +99,34 @@ const currentPath = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(
       .eq('id', sessionData.session.user.id)
       .single();
 
-    if (profile && profile.status === 'active' && isAdminRole(profile.role)) {
-      document.getElementById('admin-link')?.classList.remove('hidden');
+    if (!profile || profile.status !== 'active' || !isAdminRole(profile.role)) return;
+
+    const toggle = document.getElementById('admin-mode-toggle-desktop')!;
+    toggle.classList.remove('hidden');
+    toggle.classList.add('flex');
+
+    const on = isAdminModeOn();
+    document.getElementById('admin-mode-label-desktop')!.textContent = on ? 'Mode admin' : 'Mode joueur';
+
+    const adminLink = document.getElementById('admin-link-desktop')!;
+    const adminTab = document.getElementById('admin-tab-mobile')!;
+    if (on) {
+      adminLink.classList.remove('hidden');
+      adminLink.classList.add('flex');
+      adminTab.classList.remove('hidden');
+      adminTab.classList.add('flex');
+    } else {
+      adminLink.classList.add('hidden');
+      adminLink.classList.remove('flex');
+      adminTab.classList.add('hidden');
+      adminTab.classList.remove('flex');
     }
   }
 
-  showAdminLinkIfAllowed();
+  document.getElementById('admin-mode-toggle-desktop')?.addEventListener('click', () => {
+    setAdminMode(!isAdminModeOn());
+  });
+
+  window.addEventListener('admin-mode-changed', refreshAdminUi);
+  refreshAdminUi();
 </script>
