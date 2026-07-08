@@ -1,29 +1,55 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
-import { url } from '../../lib/paths';
-
-const actus = (await getCollection('actus')).sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
-);
 ---
 
 <Layout title="Actus">
   <section class="mx-auto max-w-5xl px-4 py-16">
     <h1 class="text-3xl font-extrabold">Actualités</h1>
-    {actus.length === 0 && <p class="mt-6 text-slate-500">Aucune actualité pour le moment.</p>}
-    <ul class="mt-8 grid gap-6 sm:grid-cols-2">
-      {actus.map((article) => (
-        <li class="rounded border border-slate-200 p-6">
-          <p class="text-sm text-slate-500">
-            {article.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-          <a href={url(`/actus/${article.id}`)} class="mt-1 block text-xl font-bold hover:underline">
-            {article.data.titre}
-          </a>
-          <p class="mt-2 text-sm text-slate-600">{article.data.resume}</p>
-        </li>
-      ))}
-    </ul>
+    <div id="login-required" class="mt-6 hidden text-slate-500">
+      Connecte-toi pour voir les actualités du club.
+    </div>
+    <ul id="news-list" class="mt-8 grid gap-6 sm:grid-cols-2"></ul>
   </section>
 </Layout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+  import { url } from '../../lib/paths';
+
+  async function main() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      document.getElementById('login-required')!.classList.remove('hidden');
+      return;
+    }
+
+    const { data: news } = await supabase
+      .from('news')
+      .select('id, title, content, tag, created_at')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false });
+
+    const list = document.getElementById('news-list')!;
+    if (!news || news.length === 0) {
+      list.innerHTML = '<li class="text-slate-500">Aucune actualité pour le moment.</li>';
+      return;
+    }
+
+    list.innerHTML = news
+      .map(
+        (n) => `
+          <li class="rounded border border-slate-200 p-6">
+            <p class="text-sm text-slate-500">
+              ${new Date(n.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              ${n.tag ? ' · ' + n.tag : ''}
+            </p>
+            <a href="${url('/actus/detail')}?id=${n.id}" class="mt-1 block text-xl font-bold hover:underline">${n.title}</a>
+            <p class="mt-2 text-sm text-slate-600">${(n.content ?? '').slice(0, 140)}</p>
+          </li>
+        `
+      )
+      .join('');
+  }
+
+  main();
+</script>

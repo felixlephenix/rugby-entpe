@@ -1,0 +1,221 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { url } from '../../lib/paths';
+---
+
+<Layout title="Actus — Administration">
+  <section class="mx-auto max-w-4xl px-4 py-16">
+    <div id="loading" class="text-slate-500">Chargement...</div>
+
+    <div id="content" class="hidden">
+      <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-extrabold">Actus</h1>
+        <a href={url('/admin')} class="text-sm font-semibold text-slate-600 underline">← Administration</a>
+      </div>
+
+      <div class="mt-8 rounded border border-slate-200 p-4">
+        <h2 class="font-bold" id="form-title">Nouvelle actu</h2>
+        <form id="form-news" class="mt-3 space-y-2 text-sm">
+          <input type="hidden" name="id" />
+          <label class="block">Titre<input type="text" name="title" required class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+          <label class="block">Contenu<textarea name="content" rows="5" class="mt-1 w-full rounded border border-slate-300 px-2 py-1"></textarea></label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="block">
+              Tag
+              <select name="tag" class="mt-1 w-full rounded border border-slate-300 px-2 py-1">
+                <option value="annonce">Annonce</option>
+                <option value="resultat">Résultat</option>
+                <option value="evenement">Événement</option>
+              </select>
+            </label>
+            <label class="block">
+              Statut
+              <select name="status" class="mt-1 w-full rounded border border-slate-300 px-2 py-1">
+                <option value="draft">Brouillon</option>
+                <option value="published">Publié</option>
+              </select>
+            </label>
+          </div>
+          <label class="block">Photos (max 3)<input type="file" id="photo-input" accept="image/*" multiple class="mt-1 w-full text-sm" /></label>
+          <div id="photo-preview" class="flex gap-2"></div>
+          <div class="flex gap-2">
+            <button type="submit" class="mt-2 rounded bg-blue-900 px-4 py-2 font-semibold text-white hover:bg-blue-800">
+              Enregistrer
+            </button>
+            <button type="button" id="cancel-edit" class="mt-2 hidden rounded bg-slate-200 px-4 py-2 font-semibold hover:bg-slate-300">
+              Annuler
+            </button>
+          </div>
+          <p id="form-message" class="text-sm"></p>
+        </form>
+      </div>
+
+      <h2 class="mt-10 text-xl font-bold">Toutes les actus</h2>
+      <div id="news-list" class="mt-4 space-y-3"></div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+  import { requireAdmin } from '../../lib/adminGuard';
+  import { compressImage } from '../../lib/imageCompress';
+
+  const MAX_PHOTOS = 3;
+  let pendingPhotos: Blob[] = [];
+  let editingId: string | null = null;
+
+  async function loadNews() {
+    const { data: news } = await supabase
+      .from('news')
+      .select('id, title, content, tag, status, created_at, news_photos(id, storage_path)')
+      .order('created_at', { ascending: false });
+
+    const list = document.getElementById('news-list')!;
+    list.innerHTML = (news ?? [])
+      .map((n: any) => {
+        const photos = n.news_photos ?? [];
+        return `
+          <div class="rounded border border-slate-200 p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-slate-500">${n.tag ?? ''} · ${n.status === 'published' ? 'Publié' : 'Brouillon'}</p>
+                <p class="font-semibold">${n.title}</p>
+              </div>
+              <div class="flex gap-2">
+                <button data-edit="${n.id}" class="rounded bg-slate-200 px-2 py-1 text-sm hover:bg-slate-300">Modifier</button>
+                <button data-delete="${n.id}" class="rounded bg-red-600 px-2 py-1 text-sm font-semibold text-white hover:bg-red-500">Supprimer</button>
+              </div>
+            </div>
+            ${
+              photos.length > 0
+                ? `<div class="mt-2 flex gap-2">${photos
+                    .map(
+                      (p: any) =>
+                        `<img src="${supabase.storage.from('news-photos').getPublicUrl(p.storage_path).data.publicUrl}" class="h-16 w-16 rounded object-cover" />`
+                    )
+                    .join('')}</div>`
+                : ''
+            }
+          </div>
+        `;
+      })
+      .join('') || '<p class="text-slate-500">Aucune actu pour le moment.</p>';
+
+    list.querySelectorAll('[data-delete]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        if (!confirm('Supprimer cette actu ?')) return;
+        await supabase.from('news').delete().eq('id', (btn as HTMLElement).dataset.delete);
+        await loadNews();
+      })
+    );
+
+    list.querySelectorAll('[data-edit]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const item = (news ?? []).find((n: any) => n.id === (btn as HTMLElement).dataset.edit);
+        if (!item) return;
+        editingId = item.id;
+        const form = document.getElementById('form-news') as HTMLFormElement;
+        (form.elements.namedItem('title') as HTMLInputElement).value = item.title;
+        (form.elements.namedItem('content') as HTMLTextAreaElement).value = item.content ?? '';
+        (form.elements.namedItem('tag') as HTMLSelectElement).value = item.tag ?? 'annonce';
+        (form.elements.namedItem('status') as HTMLSelectElement).value = item.status;
+        document.getElementById('form-title')!.textContent = 'Modifier l\'actu';
+        document.getElementById('cancel-edit')!.classList.remove('hidden');
+        pendingPhotos = [];
+        document.getElementById('photo-preview')!.innerHTML = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      })
+    );
+  }
+
+  function resetForm() {
+    editingId = null;
+    pendingPhotos = [];
+    (document.getElementById('form-news') as HTMLFormElement).reset();
+    document.getElementById('photo-preview')!.innerHTML = '';
+    document.getElementById('form-title')!.textContent = 'Nouvelle actu';
+    document.getElementById('cancel-edit')!.classList.add('hidden');
+  }
+
+  async function main() {
+    const profile = await requireAdmin();
+    if (!profile) return;
+
+    document.getElementById('photo-input')!.addEventListener('change', async (event) => {
+      const files = Array.from((event.target as HTMLInputElement).files ?? []);
+      const preview = document.getElementById('photo-preview')!;
+
+      for (const file of files) {
+        if (pendingPhotos.length >= MAX_PHOTOS) {
+          alert(`Maximum ${MAX_PHOTOS} photos par actu.`);
+          break;
+        }
+        const compressed = await compressImage(file);
+        pendingPhotos.push(compressed);
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(compressed);
+        img.className = 'h-16 w-16 rounded object-cover';
+        preview.appendChild(img);
+      }
+      (event.target as HTMLInputElement).value = '';
+    });
+
+    document.getElementById('cancel-edit')!.addEventListener('click', resetForm);
+
+    document.getElementById('form-news')!.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(event.target as HTMLFormElement);
+      const message = document.getElementById('form-message')!;
+      const status = String(formData.get('status'));
+
+      const payload = {
+        title: String(formData.get('title')),
+        content: String(formData.get('content') || '') || null,
+        tag: String(formData.get('tag')),
+        status,
+        published_at: status === 'published' ? new Date().toISOString() : null,
+      };
+
+      let newsId = editingId;
+
+      if (newsId) {
+        const { error } = await supabase.from('news').update(payload).eq('id', newsId);
+        if (error) {
+          message.textContent = 'Erreur : ' + error.message;
+          return;
+        }
+      } else {
+        const { data, error } = await supabase.from('news').insert(payload).select().single();
+        if (error || !data) {
+          message.textContent = 'Erreur : ' + (error?.message ?? '');
+          return;
+        }
+        newsId = data.id;
+      }
+
+      for (const [index, photo] of pendingPhotos.entries()) {
+        const path = `${newsId}/${Date.now()}-${index}.jpg`;
+        const { error: uploadError } = await supabase.storage.from('news-photos').upload(path, photo, {
+          contentType: 'image/jpeg',
+        });
+        if (uploadError) {
+          message.textContent = 'Erreur upload photo : ' + uploadError.message;
+          continue;
+        }
+        await supabase.from('news_photos').insert({ news_id: newsId, storage_path: path });
+      }
+
+      message.textContent = 'Actu enregistrée.';
+      resetForm();
+      await loadNews();
+    });
+
+    await loadNews();
+
+    document.getElementById('loading')!.classList.add('hidden');
+    document.getElementById('content')!.classList.remove('hidden');
+  }
+
+  main();
+</script>

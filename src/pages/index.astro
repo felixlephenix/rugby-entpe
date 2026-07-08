@@ -1,16 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
 import { url } from '../lib/paths';
-
-const actus = (await getCollection('actus'))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, 3);
-
-const prochainsMatchs = (await getCollection('matchs'))
-  .filter((m) => m.data.date.valueOf() >= Date.now())
-  .sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf())
-  .slice(0, 3);
 ---
 
 <Layout title="Accueil">
@@ -42,20 +32,9 @@ const prochainsMatchs = (await getCollection('matchs'))
   </section>
 
   <section class="mx-auto max-w-5xl px-4 pb-16">
-    <h2 class="text-2xl font-bold">Prochains matchs</h2>
-    {prochainsMatchs.length === 0 && <p class="mt-4 text-slate-500">Aucun match programmé pour le moment.</p>}
-    <ul class="mt-6 grid gap-4 sm:grid-cols-3">
-      {prochainsMatchs.map((match) => (
-        <li class="rounded border border-slate-200 p-4">
-          <p class="text-sm text-slate-500">
-            {match.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
-          </p>
-          <p class="mt-1 font-semibold">
-            {match.data.domicile ? 'ENTPE' : match.data.adversaire} vs {match.data.domicile ? match.data.adversaire : 'ENTPE'}
-          </p>
-          <p class="text-sm text-slate-500">{match.data.lieu}</p>
-        </li>
-      ))}
+    <h2 class="text-2xl font-bold">Prochains événements</h2>
+    <ul id="prochains-events" class="mt-6 grid gap-4 sm:grid-cols-3">
+      <li class="text-sm text-slate-500">Chargement...</li>
     </ul>
     <a href={url('/calendrier')} class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
       Voir tout le calendrier →
@@ -64,19 +43,8 @@ const prochainsMatchs = (await getCollection('matchs'))
 
   <section class="mx-auto max-w-5xl px-4 pb-16">
     <h2 class="text-2xl font-bold">Dernières actus</h2>
-    {actus.length === 0 && <p class="mt-4 text-slate-500">Aucune actualité pour le moment.</p>}
-    <ul class="mt-6 grid gap-4 sm:grid-cols-3">
-      {actus.map((article) => (
-        <li class="rounded border border-slate-200 p-4">
-          <p class="text-sm text-slate-500">
-            {article.data.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
-          </p>
-          <a href={url(`/actus/${article.id}`)} class="mt-1 block font-semibold hover:underline">
-            {article.data.titre}
-          </a>
-          <p class="mt-1 text-sm text-slate-600">{article.data.resume}</p>
-        </li>
-      ))}
+    <ul id="dernieres-actus" class="mt-6 grid gap-4 sm:grid-cols-3">
+      <li class="text-sm text-slate-500">Chargement...</li>
     </ul>
     <a href={url('/actus')} class="mt-6 inline-block text-sm font-semibold text-slate-900 underline">
       Toutes les actus →
@@ -109,5 +77,82 @@ const prochainsMatchs = (await getCollection('matchs'))
       .join('');
   }
 
+  async function loadUpcomingEvents() {
+    const list = document.getElementById('prochains-events')!;
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      list.innerHTML = '<li class="text-sm text-slate-500">Connecte-toi pour voir les prochains événements.</li>';
+      return;
+    }
+
+    const { data: events } = await supabase
+      .from('events')
+      .select('id, title, date, time, location, match_details(opponent)')
+      .eq('status', 'active')
+      .gte('date', new Date().toISOString().slice(0, 10))
+      .order('date')
+      .order('time')
+      .limit(3);
+
+    if (!events || events.length === 0) {
+      list.innerHTML = '<li class="text-sm text-slate-500">Aucun événement programmé pour le moment.</li>';
+      return;
+    }
+
+    list.innerHTML = events
+      .map((ev: any) => {
+        const match = Array.isArray(ev.match_details) ? ev.match_details[0] : ev.match_details;
+        return `
+          <li class="rounded border border-slate-200 p-4">
+            <p class="text-sm text-slate-500">
+              ${new Date(`${ev.date}T${ev.time}`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+            </p>
+            <p class="mt-1 font-semibold">${ev.title}${match ? ' vs ' + match.opponent : ''}</p>
+            <p class="text-sm text-slate-500">${ev.location ?? ''}</p>
+          </li>
+        `;
+      })
+      .join('');
+  }
+
+  async function loadDernieresActus() {
+    const list = document.getElementById('dernieres-actus')!;
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      list.innerHTML = '<li class="text-sm text-slate-500">Connecte-toi pour voir les actualités.</li>';
+      return;
+    }
+
+    const { data: news } = await supabase
+      .from('news')
+      .select('id, title, content, created_at')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    if (!news || news.length === 0) {
+      list.innerHTML = '<li class="text-sm text-slate-500">Aucune actualité pour le moment.</li>';
+      return;
+    }
+
+    list.innerHTML = news
+      .map(
+        (article) => `
+          <li class="rounded border border-slate-200 p-4">
+            <p class="text-sm text-slate-500">
+              ${new Date(article.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+            </p>
+            <a href="${url('/actus/detail')}?id=${article.id}" class="mt-1 block font-semibold hover:underline">
+              ${article.title}
+            </a>
+            <p class="mt-1 text-sm text-slate-600">${(article.content ?? '').slice(0, 80)}</p>
+          </li>
+        `
+      )
+      .join('');
+  }
+
   loadLeaderboard();
+  loadUpcomingEvents();
+  loadDernieresActus();
 </script>

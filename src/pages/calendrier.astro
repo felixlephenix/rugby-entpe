@@ -1,43 +1,121 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
-
-const matchs = (await getCollection('matchs')).sort(
-  (a, b) => a.data.date.valueOf() - b.data.date.valueOf()
-);
 ---
 
 <Layout title="Calendrier">
   <section class="mx-auto max-w-5xl px-4 py-16">
-    <h1 class="text-3xl font-extrabold">Calendrier des matchs</h1>
-    {matchs.length === 0 && <p class="mt-6 text-slate-500">Aucun match programmé pour le moment.</p>}
-    <ul class="mt-8 divide-y divide-slate-200">
-      {matchs.map((match) => {
-        const passe = match.data.date.valueOf() < Date.now();
-        return (
-          <li class="flex flex-wrap items-center justify-between gap-2 py-4">
-            <div>
-              <p class="text-sm text-slate-500">
-                {match.data.date.toLocaleDateString('fr-FR', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                })}
-                {' · '}{match.data.categorie}
-              </p>
-              <p class="font-semibold">
-                {match.data.domicile ? 'ENTPE' : match.data.adversaire} vs {match.data.domicile ? match.data.adversaire : 'ENTPE'}
-              </p>
-              <p class="text-sm text-slate-500">{match.data.lieu}</p>
-            </div>
-            {passe && match.data.scoreEquipe !== undefined && match.data.scoreAdversaire !== undefined && (
-              <p class="text-lg font-bold">
-                {match.data.scoreEquipe} - {match.data.scoreAdversaire}
-              </p>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <div class="flex items-center justify-between">
+      <h1 class="text-3xl font-extrabold">Calendrier</h1>
+      <button id="export-season" class="hidden text-sm font-semibold text-blue-900 underline">
+        Exporter toute la saison (.ics)
+      </button>
+    </div>
+    <div id="login-required" class="mt-6 hidden text-slate-500">
+      Connecte-toi pour voir le calendrier du club.
+    </div>
+    <ul id="events-list" class="mt-8 divide-y divide-slate-200"></ul>
   </section>
 </Layout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  function toIcsDate(date: string, time: string): string {
+    return `${date.replace(/-/g, '')}T${time.replace(':', '').padEnd(6, '0')}`;
+  }
+
+  function eventToIcs(ev: any): string {
+    const start = toIcsDate(ev.date, ev.time);
+    return [
+      'BEGIN:VEVENT',
+      `UID:${ev.id}@rugby-entpe`,
+      `DTSTART:${start}`,
+      `SUMMARY:${ev.title}${ev.match_details?.[0] ? ' vs ' + ev.match_details[0].opponent : ''}`,
+      ev.location ? `LOCATION:${ev.location}` : '',
+      ev.note ? `DESCRIPTION:${ev.note}` : '',
+      'END:VEVENT',
+    ]
+      .filter(Boolean)
+      .join('\r\n');
+  }
+
+  function downloadIcs(filename: string, events: any[]) {
+    const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Rugby ENTPE//FR', ...events.map(eventToIcs), 'END:VCALENDAR'].join(
+      '\r\n'
+    );
+    const blob = new Blob([body], { type: 'text/calendar' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  }
+
+  async function main() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      document.getElementById('login-required')!.classList.remove('hidden');
+      return;
+    }
+
+    const { data: events } = await supabase
+      .from('events')
+      .select('id, title, type, date, time, location, teams, note, status, cancel_reason, match_details(opponent)')
+      .gte('date', new Date().toISOString().slice(0, 10))
+      .order('date')
+      .order('time');
+
+    const list = document.getElementById('events-list')!;
+
+    if (!events || events.length === 0) {
+      list.innerHTML = '<li class="py-4 text-slate-500">Aucun événement à venir.</li>';
+      return;
+    }
+
+    list.innerHTML = events
+      .map((ev: any) => {
+        const match = Array.isArray(ev.match_details) ? ev.match_details[0] : ev.match_details;
+        const dateLabel = new Date(`${ev.date}T${ev.time}`).toLocaleString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const cancelled = ev.status === 'cancelled';
+
+        return `
+          <li class="flex flex-wrap items-center justify-between gap-2 py-4 ${cancelled ? 'opacity-50' : ''}">
+            <div>
+              <p class="text-sm text-slate-500">${dateLabel} · ${ev.teams.join('/')}</p>
+              <p class="font-semibold ${cancelled ? 'line-through' : ''}">
+                ${ev.title}${match ? ' vs ' + match.opponent : ''}
+              </p>
+              <p class="text-sm text-slate-500">${ev.location ?? ''}</p>
+              ${ev.note ? `<p class="text-sm text-slate-600">${ev.note}</p>` : ''}
+              ${cancelled ? `<p class="text-sm font-semibold text-red-600">Annulé${ev.cancel_reason ? ' — ' + ev.cancel_reason : ''}</p>` : ''}
+            </div>
+            ${
+              !cancelled
+                ? `<button data-export="${ev.id}" class="text-sm font-semibold text-blue-900 underline">Ajouter à mon calendrier</button>`
+                : ''
+            }
+          </li>
+        `;
+      })
+      .join('');
+
+    list.querySelectorAll('[data-export]').forEach((btn) => {
+      const id = (btn as HTMLElement).dataset.export;
+      const ev = events.find((e: any) => e.id === id);
+      btn.addEventListener('click', () => downloadIcs(`${ev.title}.ics`, [ev]));
+    });
+
+    const exportSeasonBtn = document.getElementById('export-season')!;
+    exportSeasonBtn.classList.remove('hidden');
+    exportSeasonBtn.addEventListener('click', () => {
+      downloadIcs('saison-rugby-entpe.ics', events.filter((e: any) => e.status !== 'cancelled'));
+    });
+  }
+
+  main();
+</script>

@@ -1,0 +1,317 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { url } from '../../lib/paths';
+---
+
+<Layout title="Calendrier — Administration">
+  <section class="mx-auto max-w-5xl px-4 py-16">
+    <div id="loading" class="text-slate-500">Chargement...</div>
+
+    <div id="content" class="hidden">
+      <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-extrabold">Calendrier</h1>
+        <a href={url('/admin')} class="text-sm font-semibold text-slate-600 underline">← Administration</a>
+      </div>
+
+      <div class="mt-8 grid gap-8 md:grid-cols-2">
+        <div class="rounded border border-slate-200 p-4">
+          <h2 class="font-bold">Nouvel entraînement récurrent</h2>
+          <form id="form-recurring" class="mt-3 space-y-2 text-sm">
+            <div class="grid grid-cols-2 gap-2">
+              <label class="block">Début<input type="date" name="start_date" required class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+              <label class="block">Fin<input type="date" name="end_date" required class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+            </div>
+            <label class="block">
+              Jour de la semaine
+              <select name="weekday" class="mt-1 w-full rounded border border-slate-300 px-2 py-1">
+                <option value="1">Lundi</option>
+                <option value="2">Mardi</option>
+                <option value="3">Mercredi</option>
+                <option value="4">Jeudi</option>
+                <option value="5">Vendredi</option>
+                <option value="6">Samedi</option>
+                <option value="0">Dimanche</option>
+              </select>
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="block">Heure<input type="time" name="time" required class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+              <label class="block">Lieu<input type="text" name="location" class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+            </div>
+            <label class="flex items-center gap-2"><input type="checkbox" name="team_e1" checked /> E1</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="team_e2" checked /> E2</label>
+            <label class="block">Note<input type="text" name="note" class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+            <button type="submit" class="mt-2 rounded bg-blue-900 px-4 py-2 font-semibold text-white hover:bg-blue-800">
+              Générer les entraînements
+            </button>
+            <p id="recurring-message" class="text-sm"></p>
+          </form>
+        </div>
+
+        <div class="rounded border border-slate-200 p-4">
+          <h2 class="font-bold">Nouveau match / extra</h2>
+          <form id="form-event" class="mt-3 space-y-2 text-sm">
+            <label class="block">
+              Type
+              <select name="type" class="mt-1 w-full rounded border border-slate-300 px-2 py-1">
+                <option value="match">Match</option>
+                <option value="extra">Extra</option>
+              </select>
+            </label>
+            <label class="block">Titre<input type="text" name="title" required class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+            <div id="opponent-field">
+              <label class="block">Adversaire<input type="text" name="opponent" class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="block">Date<input type="date" name="date" required class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+              <label class="block">Heure<input type="time" name="time" required class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+            </div>
+            <label class="block">Lieu<input type="text" name="location" class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="team_e1" checked /> E1</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="team_e2" checked /> E2</label>
+            <label class="block">Note<input type="text" name="note" class="mt-1 w-full rounded border border-slate-300 px-2 py-1" /></label>
+            <button type="submit" class="mt-2 rounded bg-blue-900 px-4 py-2 font-semibold text-white hover:bg-blue-800">
+              Créer l'événement
+            </button>
+            <p id="event-message" class="text-sm"></p>
+          </form>
+        </div>
+      </div>
+
+      <h2 class="mt-10 text-xl font-bold">Événements à venir</h2>
+      <div id="events-list" class="mt-4 space-y-3"></div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+  import { requireAdmin } from '../../lib/adminGuard';
+
+  function teamsFromForm(formData: FormData): string[] {
+    const teams: string[] = [];
+    if (formData.get('team_e1')) teams.push('E1');
+    if (formData.get('team_e2')) teams.push('E2');
+    return teams;
+  }
+
+  async function loadEvents() {
+    const { data: events } = await supabase
+      .from('events')
+      .select('id, title, type, date, time, location, teams, status, cancel_reason, match_details(id, opponent, score_home, score_away)')
+      .gte('date', new Date().toISOString().slice(0, 10))
+      .order('date')
+      .order('time');
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .eq('status', 'active')
+      .order('first_name');
+
+    const list = document.getElementById('events-list')!;
+    list.innerHTML = (events ?? [])
+      .map((ev: any) => {
+        const match = Array.isArray(ev.match_details) ? ev.match_details[0] : ev.match_details;
+        const dateLabel = new Date(`${ev.date}T${ev.time}`).toLocaleString('fr-FR', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        return `
+          <div class="rounded border border-slate-200 p-4 ${ev.status === 'cancelled' ? 'opacity-50' : ''}">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-slate-500">${dateLabel} · ${ev.type} · ${ev.teams.join('/')} ${ev.status === 'cancelled' ? '· ANNULÉ' : ''}</p>
+                <p class="font-semibold">${ev.title}${match ? ' vs ' + match.opponent : ''}</p>
+                <p class="text-sm text-slate-500">${ev.location ?? ''}</p>
+              </div>
+              <div class="flex gap-2">
+                ${ev.status === 'active' ? `<button data-cancel="${ev.id}" class="rounded bg-slate-200 px-2 py-1 text-sm hover:bg-slate-300">Annuler</button>` : ''}
+              </div>
+            </div>
+            ${
+              match
+                ? `
+              <div class="mt-3 flex items-center gap-2 text-sm">
+                <label>Score domicile <input type="number" data-score-home="${match.id}" value="${match.score_home ?? ''}" class="w-16 rounded border border-slate-300 px-1" /></label>
+                <label>Score adversaire <input type="number" data-score-away="${match.id}" value="${match.score_away ?? ''}" class="w-16 rounded border border-slate-300 px-1" /></label>
+                <button data-save-score="${match.id}" class="rounded bg-yellow-400 px-2 py-1 font-semibold text-blue-900 hover:bg-yellow-300">Enregistrer le score</button>
+              </div>
+              <div class="mt-3">
+                <p class="text-sm font-semibold">Composition</p>
+                <div data-compo="${ev.id}" class="mt-1 grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p class="text-slate-500">E1</p>
+                    ${(profiles ?? [])
+                      .map(
+                        (p) =>
+                          `<label class="flex items-center gap-1"><input type="checkbox" data-compo-player="${ev.id}:${p.id}:E1" /> ${p.first_name} ${p.last_name}</label>`
+                      )
+                      .join('')}
+                  </div>
+                  <div>
+                    <p class="text-slate-500">E2</p>
+                    ${(profiles ?? [])
+                      .map(
+                        (p) =>
+                          `<label class="flex items-center gap-1"><input type="checkbox" data-compo-player="${ev.id}:${p.id}:E2" /> ${p.first_name} ${p.last_name}</label>`
+                      )
+                      .join('')}
+                  </div>
+                </div>
+                <button data-save-compo="${ev.id}" class="mt-2 rounded bg-blue-900 px-2 py-1 text-sm font-semibold text-white hover:bg-blue-800">Enregistrer la compo</button>
+              </div>
+            `
+                : ''
+            }
+          </div>
+        `;
+      })
+      .join('') || '<p class="text-slate-500">Aucun événement à venir.</p>';
+
+    // Pré-cocher la compo existante
+    for (const ev of events ?? []) {
+      const match = Array.isArray((ev as any).match_details) ? (ev as any).match_details[0] : (ev as any).match_details;
+      if (!match) continue;
+      const { data: compo } = await supabase.from('event_compositions').select('player_id, team').eq('event_id', ev.id);
+      for (const c of compo ?? []) {
+        const checkbox = document.querySelector(`[data-compo-player="${ev.id}:${c.player_id}:${c.team}"]`) as HTMLInputElement | null;
+        if (checkbox) checkbox.checked = true;
+      }
+    }
+
+    list.querySelectorAll('[data-cancel]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const reason = prompt("Motif de l'annulation (optionnel)") ?? '';
+        const id = (btn as HTMLElement).dataset.cancel;
+        await supabase.from('events').update({ status: 'cancelled', cancel_reason: reason || null }).eq('id', id);
+        await loadEvents();
+      })
+    );
+
+    list.querySelectorAll('[data-save-score]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.saveScore;
+        const home = (document.querySelector(`[data-score-home="${id}"]`) as HTMLInputElement).value;
+        const away = (document.querySelector(`[data-score-away="${id}"]`) as HTMLInputElement).value;
+        const { error } = await supabase
+          .from('match_details')
+          .update({ score_home: home === '' ? null : Number(home), score_away: away === '' ? null : Number(away) })
+          .eq('id', id);
+        if (error) alert('Erreur : ' + error.message);
+        else alert('Score enregistré. Un brouillon d\'actu a été généré si les deux scores sont renseignés pour la première fois.');
+        await loadEvents();
+      })
+    );
+
+    list.querySelectorAll('[data-save-compo]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const eventId = (btn as HTMLElement).dataset.saveCompo!;
+        const checked = list.querySelectorAll(`[data-compo-player^="${eventId}:"]:checked`);
+        await supabase.from('event_compositions').delete().eq('event_id', eventId);
+        const rows = Array.from(checked).map((el) => {
+          const [, playerId, team] = (el as HTMLInputElement).dataset.compoPlayer!.split(':');
+          return { event_id: eventId, player_id: playerId, team };
+        });
+        if (rows.length > 0) {
+          const { error } = await supabase.from('event_compositions').insert(rows);
+          if (error) alert('Erreur : ' + error.message);
+        }
+        alert('Composition enregistrée.');
+      })
+    );
+  }
+
+  async function main() {
+    const profile = await requireAdmin();
+    if (!profile) return;
+
+    document.getElementById('form-recurring')!.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(event.target as HTMLFormElement);
+      const startDate = new Date(String(formData.get('start_date')));
+      const endDate = new Date(String(formData.get('end_date')));
+      const weekday = Number(formData.get('weekday'));
+      const time = String(formData.get('time'));
+      const location = String(formData.get('location') || '');
+      const note = String(formData.get('note') || '');
+      const teams = teamsFromForm(formData);
+      const message = document.getElementById('recurring-message')!;
+
+      const rows = [];
+      const cursor = new Date(startDate);
+      while (cursor.getDay() !== weekday) cursor.setDate(cursor.getDate() + 1);
+      while (cursor <= endDate) {
+        rows.push({
+          title: 'Entraînement',
+          type: 'entrainement',
+          date: cursor.toISOString().slice(0, 10),
+          time,
+          location,
+          teams,
+          note: note || null,
+        });
+        cursor.setDate(cursor.getDate() + 7);
+      }
+
+      if (rows.length === 0) {
+        message.textContent = 'Aucune date générée, vérifie les dates de début/fin.';
+        return;
+      }
+
+      const { error } = await supabase.from('events').insert(rows);
+      message.textContent = error ? 'Erreur : ' + error.message : `${rows.length} entraînement(s) créé(s).`;
+      await loadEvents();
+    });
+
+    document.querySelector('#form-event select[name="type"]')!.addEventListener('change', (e) => {
+      const isMatch = (e.target as HTMLSelectElement).value === 'match';
+      (document.getElementById('opponent-field') as HTMLElement).style.display = isMatch ? '' : 'none';
+    });
+
+    document.getElementById('form-event')!.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(event.target as HTMLFormElement);
+      const type = String(formData.get('type'));
+      const message = document.getElementById('event-message')!;
+
+      const { data: created, error } = await supabase
+        .from('events')
+        .insert({
+          title: String(formData.get('title')),
+          type,
+          date: String(formData.get('date')),
+          time: String(formData.get('time')),
+          location: String(formData.get('location') || '') || null,
+          teams: teamsFromForm(formData),
+          note: String(formData.get('note') || '') || null,
+        })
+        .select()
+        .single();
+
+      if (error || !created) {
+        message.textContent = 'Erreur : ' + (error?.message ?? '');
+        return;
+      }
+
+      if (type === 'match') {
+        const opponent = String(formData.get('opponent') || '');
+        await supabase.from('match_details').insert({ event_id: created.id, opponent });
+      }
+
+      message.textContent = 'Événement créé.';
+      (event.target as HTMLFormElement).reset();
+      await loadEvents();
+    });
+
+    await loadEvents();
+
+    document.getElementById('loading')!.classList.add('hidden');
+    document.getElementById('content')!.classList.remove('hidden');
+  }
+
+  main();
+</script>

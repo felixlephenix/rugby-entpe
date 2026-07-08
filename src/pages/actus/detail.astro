@@ -1,0 +1,61 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Actu">
+  <article class="mx-auto max-w-3xl px-4 py-16">
+    <div id="loading" class="text-slate-500">Chargement...</div>
+    <div id="not-found" class="hidden text-slate-500">Actualité introuvable.</div>
+    <div id="content" class="hidden">
+      <p id="meta" class="text-sm text-slate-500"></p>
+      <h1 id="title" class="mt-2 text-3xl font-extrabold"></h1>
+      <div id="photos" class="mt-6 flex flex-wrap gap-3"></div>
+      <p id="body" class="mt-6 whitespace-pre-line text-slate-700"></p>
+    </div>
+  </article>
+</Layout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  async function main() {
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (!id) {
+      document.getElementById('loading')!.classList.add('hidden');
+      document.getElementById('not-found')!.classList.remove('hidden');
+      return;
+    }
+
+    const { data: news } = await supabase
+      .from('news')
+      .select('title, content, tag, created_at, news_photos(storage_path)')
+      .eq('id', id)
+      .eq('status', 'published')
+      .maybeSingle();
+
+    document.getElementById('loading')!.classList.add('hidden');
+
+    if (!news) {
+      document.getElementById('not-found')!.classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('meta')!.textContent =
+      new Date(news.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) +
+      (news.tag ? ' · ' + news.tag : '');
+    document.getElementById('title')!.textContent = news.title;
+    document.getElementById('body')!.textContent = news.content ?? '';
+
+    const photos = news.news_photos ?? [];
+    document.getElementById('photos')!.innerHTML = photos
+      .map(
+        (p: any) =>
+          `<img src="${supabase.storage.from('news-photos').getPublicUrl(p.storage_path).data.publicUrl}" class="h-48 w-48 rounded object-cover" />`
+      )
+      .join('');
+
+    document.getElementById('content')!.classList.remove('hidden');
+  }
+
+  main();
+</script>
