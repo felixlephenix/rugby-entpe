@@ -36,6 +36,7 @@ import { url } from '../../lib/paths';
               <th class="py-2 pr-4">Nom</th>
               <th class="py-2 pr-4">Poste</th>
               <th class="py-2 pr-4">Équipe</th>
+              <th class="py-2 pr-4">Promo</th>
               <th class="py-2 pr-4">Rôle</th>
               <th class="py-2 pr-4">Statut</th>
               <th class="py-2 pr-4">Actions</th>
@@ -128,6 +129,10 @@ import { url } from '../../lib/paths';
              </select>`
           : p.default_team || '—';
 
+        const promoCell = isEditing
+          ? `<input data-field="promo" type="number" value="${p.promo ?? ''}" class="w-20 rounded border border-slate-200 px-2 py-1" />`
+          : p.promo || '—';
+
         const roleCell = isSuperAdmin
           ? 'Super admin'
           : isEditing
@@ -175,6 +180,7 @@ import { url } from '../../lib/paths';
             </td>
             <td class="py-2 pr-4">${positionCell}</td>
             <td class="py-2 pr-4">${teamCell}</td>
+            <td class="py-2 pr-4">${promoCell}</td>
             <td class="py-2 pr-4">${roleCell}</td>
             <td class="py-2 pr-4">${STATUS_LABELS[p.status]}</td>
             <td class="py-2 pr-4 space-x-2 whitespace-nowrap">${pendingActions}${editActions}</td>
@@ -243,9 +249,14 @@ import { url } from '../../lib/paths';
         const row = rows.querySelector(`tr[data-row="${id}"]`)!;
         const position = (row.querySelector('[data-field="position"]') as HTMLInputElement).value || null;
         const defaultTeam = (row.querySelector('[data-field="default_team"]') as HTMLSelectElement).value || null;
+        const promoValue = (row.querySelector('[data-field="promo"]') as HTMLInputElement).value;
         const roleField = row.querySelector('[data-field="role"]') as HTMLSelectElement | null;
 
-        const update: Record<string, unknown> = { position, default_team: defaultTeam };
+        const update: Record<string, unknown> = {
+          position,
+          default_team: defaultTeam,
+          promo: promoValue ? Number(promoValue) : null,
+        };
         if (roleField) update.role = roleField.value;
 
         const { error } = await supabase.from('profiles').update(update).eq('id', id);

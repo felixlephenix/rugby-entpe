@@ -56,7 +56,7 @@ import Layout from '../layouts/Layout.astro';
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('first_name, last_name, position, default_team, bio, avatar_path, status, role')
+      .select('first_name, last_name, position, default_team, bio, avatar_path, status, role, promo')
       .eq('id', id)
       .maybeSingle();
 
@@ -68,9 +68,13 @@ import Layout from '../layouts/Layout.astro';
     }
 
     document.getElementById('name')!.textContent = `${profile.first_name} ${profile.last_name}`;
-    document.getElementById('position-team')!.textContent = [profile.position, profile.default_team]
+    document.getElementById('position-team')!.textContent = [
+      profile.position,
+      profile.default_team,
+      profile.promo ? `Promo ${profile.promo}` : null,
+    ]
       .filter(Boolean)
-      .join(' · ') || 'Poste et équipe non renseignés';
+      .join(' · ') || 'Informations non renseignées';
     document.getElementById('bio')!.textContent = profile.bio || 'Aucune bio pour le moment.';
 
     (document.getElementById('avatar') as HTMLImageElement).src = avatarUrl(profile);

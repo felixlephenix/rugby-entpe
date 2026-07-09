@@ -19,6 +19,7 @@ export interface Profile {
   former_bureau: boolean;
   bio: string | null;
   avatar_path: string | null;
+  promo: number | null;
 }
 
 export function isAdminRole(role: ProfileRole): boolean {
