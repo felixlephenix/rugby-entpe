@@ -37,7 +37,7 @@ import Layout from '../layouts/Layout.astro';
     const names = bureau
       .map((p) => `${p.first_name} ${p.last_name}${p.promo ? ' (promo ' + p.promo + ')' : ''}`)
       .join(', ');
-    target.textContent = `Cherche l'un·e des membres du bureau sur Messenger : ${names}.`;
+    target.textContent = ${names}.`;
   }
 
   loadMessengerContacts();
