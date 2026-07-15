@@ -47,6 +47,17 @@ import { url } from '../../lib/paths';
       </div>
 
       <div class="mt-8 rounded border border-slate-200 p-4">
+        <h2 class="font-bold">Points</h2>
+        <button
+          id="reset-all-points"
+          type="button"
+          class="mt-2 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
+        >
+          Réinitialiser les points de tout le monde
+        </button>
+      </div>
+
+      <div class="mt-8 rounded border border-slate-200 p-4">
         <h2 class="font-bold">Créer une invitation</h2>
         <form id="form-invite" class="mt-2 flex flex-wrap items-end gap-3">
           <div>
@@ -151,7 +162,8 @@ import { url } from '../../lib/paths';
                !isSuperAdmin && p.status === 'active'
                  ? `<button data-mark-ancien="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Marquer ancien</button>`
                  : ''
-             }`
+             }
+             <button data-reset-points="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Réinitialiser points</button>`
           : `<button data-edit="${p.id}" class="rounded bg-slate-200 px-2 py-1 hover:bg-slate-300">Modifier</button>
              ${
                !isSuperAdmin
@@ -211,6 +223,16 @@ import { url } from '../../lib/paths';
         const id = (btn as HTMLElement).dataset.markAncien!;
         await supabase.from('profiles').update({ status: 'ancien' }).eq('id', id);
         editingIds.delete(id);
+        await load();
+      })
+    );
+
+    rows.querySelectorAll('[data-reset-points]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.resetPoints!;
+        if (!confirm('Réinitialiser tous les points de ce joueur ?')) return;
+        const { error } = await supabase.from('points_log').delete().eq('player_id', id);
+        if (error) alert('Erreur : ' + error.message);
         await load();
       })
     );
@@ -294,6 +316,13 @@ import { url } from '../../lib/paths';
       });
     });
     document.querySelector('.filter-btn[data-filter="all"]')!.classList.add('bg-bs-navy', 'text-white');
+
+    document.getElementById('reset-all-points')!.addEventListener('click', async () => {
+      if (!confirm('Réinitialiser les points de TOUS les joueurs ? Action irréversible.')) return;
+      const { error } = await supabase.from('points_log').delete().not('id', 'is', null);
+      if (error) alert('Erreur : ' + error.message);
+      await load();
+    });
 
     document.getElementById('form-invite')!.addEventListener('submit', async (event) => {
       event.preventDefault();
