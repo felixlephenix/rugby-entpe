@@ -129,7 +129,12 @@ import { url } from '../../lib/paths';
                 <p class="text-sm text-slate-500">${ev.location ?? ''}</p>
               </div>
               <div class="flex gap-2">
-                ${ev.status === 'active' ? `<button data-cancel="${ev.id}" class="rounded bg-slate-200 px-2 py-1 text-sm hover:bg-slate-300">Annuler</button>` : ''}
+                ${
+                  ev.status === 'active'
+                    ? `<button data-cancel="${ev.id}" class="rounded bg-slate-200 px-2 py-1 text-sm hover:bg-slate-300">Annuler</button>`
+                    : `<button data-restore="${ev.id}" class="rounded bg-bs-yellow px-2 py-1 text-sm font-semibold text-bs-navy hover:bg-bs-yellow/90">Réactiver</button>`
+                }
+                <button data-delete-event="${ev.id}" class="rounded bg-red-600 px-2 py-1 text-sm font-semibold text-white hover:bg-red-500">Supprimer</button>
               </div>
             </div>
             ${
@@ -188,6 +193,24 @@ import { url } from '../../lib/paths';
         const reason = prompt("Motif de l'annulation (optionnel)") ?? '';
         const id = (btn as HTMLElement).dataset.cancel;
         await supabase.from('events').update({ status: 'cancelled', cancel_reason: reason || null }).eq('id', id);
+        await loadEvents();
+      })
+    );
+
+    list.querySelectorAll('[data-restore]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.restore;
+        await supabase.from('events').update({ status: 'active', cancel_reason: null }).eq('id', id);
+        await loadEvents();
+      })
+    );
+
+    list.querySelectorAll('[data-delete-event]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.deleteEvent;
+        if (!confirm('Supprimer définitivement cet événement ? Cette action est irréversible.')) return;
+        const { error } = await supabase.from('events').delete().eq('id', id);
+        if (error) alert('Erreur : ' + error.message);
         await loadEvents();
       })
     );

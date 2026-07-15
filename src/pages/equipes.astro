@@ -5,71 +5,169 @@ import Layout from '../layouts/Layout.astro';
 <Layout title="Équipes">
   <section class="mx-auto max-w-5xl px-4 py-16">
     <h1 class="text-3xl font-extrabold">Nos équipes</h1>
-    <div id="teams" class="mt-8 space-y-10">
-      <p class="text-slate-500">Chargement...</p>
+
+    <div class="mt-6 flex flex-wrap gap-2">
+      <button data-tab="E1" class="tab-btn rounded-full px-4 py-2 text-sm font-semibold">Équipe 1</button>
+      <button data-tab="E2" class="tab-btn rounded-full px-4 py-2 text-sm font-semibold">Équipe 2</button>
+      <button data-tab="hof" class="tab-btn rounded-full px-4 py-2 text-sm font-semibold">Hall of Fame</button>
+    </div>
+
+    <div id="team-view" class="mt-8">
+      <ul id="team-list" class="grid gap-4 sm:grid-cols-3">
+        <li class="text-slate-500">Chargement...</li>
+      </ul>
+    </div>
+
+    <div id="hof-view" class="mt-8 hidden">
+      <div class="flex flex-wrap items-center gap-3">
+        <input
+          id="hof-search"
+          type="text"
+          placeholder="Rechercher un nom..."
+          class="rounded border border-slate-300 px-3 py-2 text-sm"
+        />
+        <select id="hof-team-filter" class="rounded border border-slate-300 px-3 py-2 text-sm">
+          <option value="">Toutes les équipes</option>
+          <option value="E1">Équipe 1</option>
+          <option value="E2">Équipe 2</option>
+        </select>
+      </div>
+      <div id="hof-list" class="mt-6 space-y-8"></div>
     </div>
   </section>
 </Layout>
+
+<style>
+  .tab-btn {
+    background: var(--color-bs-card);
+    color: var(--color-bs-navy);
+    border: 1px solid var(--color-bs-border);
+  }
+  .tab-btn.active {
+    background: var(--color-bs-navy);
+    color: var(--color-bs-yellow);
+    border-color: var(--color-bs-navy);
+  }
+</style>
 
 <script>
   import { supabase } from '../lib/supabase';
   import { url } from '../lib/paths';
   import { avatarUrl } from '../lib/avatar';
 
-  const TEAM_LABELS: Record<string, string> = {
-    E1: 'Équipe 1',
-    E2: 'Équipe 2',
-    none: 'Sans équipe assignée',
-  };
+  let allProfiles: any[] = [];
+  let currentTab: 'E1' | 'E2' | 'hof' = 'E1';
 
-  async function main() {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, position, default_team, avatar_path, status, role')
-      .in('status', ['active', 'ancien'])
-      .order('first_name');
+  function playerCard(p: any): string {
+    return `
+      <li>
+        <a href="${url('/joueur')}?id=${p.id}" class="flex items-center gap-3 rounded border border-slate-200 bg-bs-card p-4 hover:border-bs-navy">
+          <img src="${avatarUrl(p)}" alt="" class="h-16 w-16 rounded-full object-cover" />
+          <div>
+            <p class="font-semibold">${p.first_name} ${p.last_name}</p>
+            <p class="text-sm text-slate-500">${p.position ?? ''}</p>
+            ${p.status === 'ancien' ? '<p class="text-xs text-slate-400">Ancien joueur</p>' : ''}
+          </div>
+        </a>
+      </li>
+    `;
+  }
 
-    const container = document.getElementById('teams')!;
+  function renderTeamView(team: 'E1' | 'E2') {
+    const list = document.getElementById('team-list')!;
+    const players = allProfiles.filter((p) => p.status === 'active' && p.default_team === team);
 
-    if (!profiles || profiles.length === 0) {
-      container.innerHTML = '<p class="text-slate-500">Aucun membre à afficher pour le moment.</p>';
+    if (players.length === 0) {
+      list.innerHTML = '<li class="text-slate-500">Aucun joueur dans cette équipe pour le moment.</li>';
       return;
     }
 
-    const groups: Record<string, typeof profiles> = { E1: [], E2: [], none: [] };
-    for (const p of profiles) {
-      const key = p.default_team ?? 'none';
-      groups[key].push(p);
+    list.innerHTML = players.map(playerCard).join('');
+  }
+
+  function renderHof() {
+    const search = (document.getElementById('hof-search') as HTMLInputElement).value.trim().toLowerCase();
+    const teamFilter = (document.getElementById('hof-team-filter') as HTMLSelectElement).value;
+
+    const filtered = allProfiles.filter((p) => {
+      if (search && !`${p.first_name} ${p.last_name}`.toLowerCase().includes(search)) return false;
+      if (teamFilter && p.default_team !== teamFilter) return false;
+      return true;
+    });
+
+    const groups = new Map<string, any[]>();
+    for (const p of filtered) {
+      const key = p.promo ? String(p.promo) : 'Promo non renseignée';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(p);
     }
 
-    container.innerHTML = (['E1', 'E2', 'none'] as const)
-      .filter((key) => groups[key].length > 0)
+    const sortedKeys = [...groups.keys()].sort((a, b) => {
+      if (a === 'Promo non renseignée') return 1;
+      if (b === 'Promo non renseignée') return -1;
+      return Number(b) - Number(a);
+    });
+
+    const container = document.getElementById('hof-list')!;
+
+    if (sortedKeys.length === 0) {
+      container.innerHTML = '<p class="text-slate-500">Aucun membre ne correspond à la recherche.</p>';
+      return;
+    }
+
+    container.innerHTML = sortedKeys
       .map(
         (key) => `
           <div>
-            <h2 class="text-xl font-bold">${TEAM_LABELS[key]}</h2>
-            <ul class="mt-4 grid gap-4 sm:grid-cols-3">
-              ${groups[key]
-                .map((p) => {
-                  return `
-                    <li>
-                      <a href="${url('/joueur')}?id=${p.id}" class="flex items-center gap-3 rounded border border-slate-200 p-4 hover:border-bs-navy">
-                        <img src="${avatarUrl(p)}" alt="" class="h-16 w-16 rounded-full object-cover" />
-                        <div>
-                          <p class="font-semibold">${p.first_name} ${p.last_name}</p>
-                          <p class="text-sm text-slate-500">${p.position ?? ''}</p>
-                          ${p.status === 'ancien' ? '<p class="text-xs text-slate-400">Ancien joueur</p>' : ''}
-                        </div>
-                      </a>
-                    </li>
-                  `;
-                })
+            <h2 class="text-lg font-bold">${key === 'Promo non renseignée' ? key : 'Promo ' + key}</h2>
+            <ul class="mt-3 grid gap-4 sm:grid-cols-3">
+              ${groups
+                .get(key)!
+                .sort((a, b) => `${a.first_name}${a.last_name}`.localeCompare(`${b.first_name}${b.last_name}`))
+                .map(playerCard)
                 .join('')}
             </ul>
           </div>
         `
       )
       .join('');
+  }
+
+  function render() {
+    if (currentTab === 'hof') {
+      document.getElementById('team-view')!.classList.add('hidden');
+      document.getElementById('hof-view')!.classList.remove('hidden');
+      renderHof();
+    } else {
+      document.getElementById('hof-view')!.classList.add('hidden');
+      document.getElementById('team-view')!.classList.remove('hidden');
+      renderTeamView(currentTab);
+    }
+  }
+
+  async function main() {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, position, default_team, avatar_path, status, role, promo')
+      .in('status', ['active', 'ancien'])
+      .order('first_name');
+
+    allProfiles = profiles ?? [];
+
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentTab = (btn as HTMLElement).dataset.tab as 'E1' | 'E2' | 'hof';
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+      });
+    });
+    document.querySelector('.tab-btn[data-tab="E1"]')!.classList.add('active');
+
+    document.getElementById('hof-search')!.addEventListener('input', renderHof);
+    document.getElementById('hof-team-filter')!.addEventListener('change', renderHof);
+
+    render();
   }
 
   main();
