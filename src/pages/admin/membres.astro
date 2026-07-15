@@ -231,7 +231,7 @@ import { url } from '../../lib/paths';
       btn.addEventListener('click', async () => {
         const id = (btn as HTMLElement).dataset.resetPoints!;
         if (!confirm('Réinitialiser tous les points de ce joueur ?')) return;
-        const { error } = await supabase.from('points_log').delete().eq('player_id', id);
+        const { error } = await supabase.rpc('reset_player_points', { p_player_id: id });
         if (error) alert('Erreur : ' + error.message);
         await load();
       })
@@ -319,7 +319,7 @@ import { url } from '../../lib/paths';
 
     document.getElementById('reset-all-points')!.addEventListener('click', async () => {
       if (!confirm('Réinitialiser les points de TOUS les joueurs ? Action irréversible.')) return;
-      const { error } = await supabase.from('points_log').delete().not('id', 'is', null);
+      const { error } = await supabase.rpc('reset_player_points');
       if (error) alert('Erreur : ' + error.message);
       await load();
     });
