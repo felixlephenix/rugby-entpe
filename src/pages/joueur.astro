@@ -12,6 +12,7 @@ import Layout from '../layouts/Layout.astro';
         <img id="avatar" src="" alt="Photo de profil" class="h-24 w-24 rounded-full object-cover" />
         <div>
           <h1 id="name" class="text-3xl font-extrabold"></h1>
+          <p id="bureau-post" class="mt-1 hidden text-sm font-semibold text-bs-navy"></p>
           <p id="position-team" class="mt-1 text-sm text-slate-500"></p>
         </div>
       </div>
@@ -37,6 +38,12 @@ import Layout from '../layouts/Layout.astro';
 
   const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
+  const BUREAU_POST_LABELS: Record<string, string> = {
+    capitaine_e1: 'Capitaine E1',
+    capitaine_e2: 'Capitaine E2',
+    respo: 'Respo',
+  };
+
   function getMonday(date: Date): string {
     const d = new Date(date);
     const day = d.getDay();
@@ -56,7 +63,7 @@ import Layout from '../layouts/Layout.astro';
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('first_name, last_name, position, default_team, bio, avatar_path, status, role, promo')
+      .select('first_name, last_name, position, default_team, bio, avatar_path, status, role, promo, role_bureau')
       .eq('id', id)
       .maybeSingle();
 
@@ -68,6 +75,11 @@ import Layout from '../layouts/Layout.astro';
     }
 
     document.getElementById('name')!.textContent = `${profile.first_name} ${profile.last_name}`;
+    if (profile.role_bureau && BUREAU_POST_LABELS[profile.role_bureau]) {
+      const bureauPostEl = document.getElementById('bureau-post')!;
+      bureauPostEl.textContent = BUREAU_POST_LABELS[profile.role_bureau];
+      bureauPostEl.classList.remove('hidden');
+    }
     document.getElementById('position-team')!.textContent = [
       profile.position,
       profile.default_team,

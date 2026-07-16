@@ -7,6 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type ProfileStatus = 'pending' | 'active' | 'ancien' | 'banned';
 export type ProfileRole = 'joueur' | 'coach' | 'bureau' | 'respo_site' | 'super_admin';
+export type BureauPost = 'capitaine_e1' | 'capitaine_e2' | 'respo';
 
 export interface Profile {
   id: string;
@@ -17,6 +18,7 @@ export interface Profile {
   role: ProfileRole;
   status: ProfileStatus;
   former_bureau: boolean;
+  role_bureau: BureauPost | null;
   bio: string | null;
   avatar_path: string | null;
   promo: number | null;

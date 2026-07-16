@@ -38,6 +38,7 @@ import { url } from '../../lib/paths';
               <th class="py-2 pr-4">Équipe</th>
               <th class="py-2 pr-4">Promo</th>
               <th class="py-2 pr-4">Rôle</th>
+              <th class="py-2 pr-4">Fonction</th>
               <th class="py-2 pr-4">Statut</th>
               <th class="py-2 pr-4">Actions</th>
             </tr>
@@ -100,6 +101,12 @@ import { url } from '../../lib/paths';
     banned: 'Banni',
   };
 
+  const BUREAU_POST_LABELS: Record<string, string> = {
+    capitaine_e1: 'Capitaine E1',
+    capitaine_e2: 'Capitaine E2',
+    respo: 'Respo',
+  };
+
   let allProfiles: Profile[] = [];
   let currentFilter = 'all';
   const editingIds = new Set<string>();
@@ -143,6 +150,17 @@ import { url } from '../../lib/paths';
         const promoCell = isEditing
           ? `<input data-field="promo" type="number" value="${p.promo ?? ''}" class="w-20 rounded border border-slate-200 px-2 py-1" />`
           : p.promo || '—';
+
+        const bureauPostOptions = Object.entries(BUREAU_POST_LABELS)
+          .map(([value, label]) => `<option value="${value}" ${p.role_bureau === value ? 'selected' : ''}>${label}</option>`)
+          .join('');
+
+        const bureauPostCell = isEditing
+          ? `<select data-field="role_bureau" class="rounded border border-slate-200 px-2 py-1">
+               <option value="">—</option>
+               ${bureauPostOptions}
+             </select>`
+          : (p.role_bureau && BUREAU_POST_LABELS[p.role_bureau]) || '—';
 
         const roleCell = isSuperAdmin
           ? 'Super admin'
@@ -194,6 +212,7 @@ import { url } from '../../lib/paths';
             <td class="py-2 pr-4">${teamCell}</td>
             <td class="py-2 pr-4">${promoCell}</td>
             <td class="py-2 pr-4">${roleCell}</td>
+            <td class="py-2 pr-4">${bureauPostCell}</td>
             <td class="py-2 pr-4">${STATUS_LABELS[p.status]}</td>
             <td class="py-2 pr-4 space-x-2 whitespace-nowrap">${pendingActions}${editActions}</td>
           </tr>
@@ -273,11 +292,13 @@ import { url } from '../../lib/paths';
         const defaultTeam = (row.querySelector('[data-field="default_team"]') as HTMLSelectElement).value || null;
         const promoValue = (row.querySelector('[data-field="promo"]') as HTMLInputElement).value;
         const roleField = row.querySelector('[data-field="role"]') as HTMLSelectElement | null;
+        const bureauPostField = row.querySelector('[data-field="role_bureau"]') as HTMLSelectElement | null;
 
         const update: Record<string, unknown> = {
           position,
           default_team: defaultTeam,
           promo: promoValue ? Number(promoValue) : null,
+          role_bureau: bureauPostField?.value || null,
         };
         if (roleField) update.role = roleField.value;
 
